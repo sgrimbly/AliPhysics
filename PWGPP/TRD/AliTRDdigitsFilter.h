@@ -131,6 +131,10 @@ private:
   TH1F *fhPtTag;                      //! pT of PID-tagged tracks
   TH1F *fhPtGood;                     //! pT spectrum after quality cuts
   TH1F *fhPtAcc;                      //! pT spectrum of accepted tracks
+  //---------------------ST JOHN EDITS---------------------------------------
+  TH1F *fhCent;                       // Centrality of event
+  TH1F *fhCentAcc;                    // Accepted events based on centrality
+  //-------------------------------------------------------------------------
 
   //TH1F *fhPt[fgkNSpecies];            //! pT spectrum for different species
 
