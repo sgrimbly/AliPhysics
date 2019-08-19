@@ -39,6 +39,10 @@
 #include "TFile.h"
 #include "TRandom.h"
 
+//------------------------------ ST JOHN EDITS ---------------------------------
+#include "AliMultSelection.h"
+//------------------------------------------------------------------------------
+
 class TCanvas;
 class TAxis;
 class TFile;
@@ -154,6 +158,11 @@ void AliTRDdigitsFilter::UserCreateOutputObjects()
   fListQA->Add(fhPtGood);
   fListQA->Add(fhPtAcc);
 
+  //------------------------- ST JOHN EDITS ------------------------------
+  fListQA->Add(fhCent);
+  fListQA->Add(fhCentAcc);
+  //----------------------------------------------------------------------
+
   PostData(1,fListQA);
 
 
@@ -220,7 +229,8 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
   //-------------------------------ST JOHN EDITS-----------------------
   Float_t centrality(0);
-  AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
+  //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
+  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));  
   if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
   
   fhCent->Fill(centrality);
