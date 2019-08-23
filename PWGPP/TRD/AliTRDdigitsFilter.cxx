@@ -39,6 +39,10 @@
 #include "TFile.h"
 #include "TRandom.h"
 
+//------------------------------ ST JOHN EDITS ---------------------------------
+#include "AliMultSelection.h"
+//------------------------------------------------------------------------------
+
 class TCanvas;
 class TAxis;
 class TFile;
@@ -141,12 +145,23 @@ void AliTRDdigitsFilter::UserCreateOutputObjects()
   fhPtGood = new TH1F("fhPtGood", "pT after quality cuts",   100,0.,20.);
   fhPtAcc  = new TH1F("fhPtAcc",  "pT of accepted tracks",   100,0.,20.);
 
+  //------------------------- ST JOHN EDITS ------------------------------
+  fhCent = new TH1F("fhCentralityAll", "Centrality of Events", 100, 0, 100);
+  fhCentAcc = new TH1F("fhCentralityAccepted", "Centrality of Accepted Events",
+                       100, 0, 100);
+  //----------------------------------------------------------------------
+
   // add everything to the list
   fListQA->Add(fhArmenteros);
   fListQA->Add(fhEventCuts);
   fListQA->Add(fhPtTag);
   fListQA->Add(fhPtGood);
   fListQA->Add(fhPtAcc);
+
+  //------------------------- ST JOHN EDITS ------------------------------
+  fListQA->Add(fhCent);
+  fListQA->Add(fhCentAcc);
+  //----------------------------------------------------------------------
 
   PostData(1,fListQA);
 
@@ -210,6 +225,20 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
   //
   //called for each event
   //
+
+
+  //-------------------------------ST JOHN EDITS-----------------------
+  Float_t centrality(0);
+  //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
+  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));  
+  if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
+  
+  fhCent->Fill(centrality);
+
+  // select most central collisions
+  if(centrality < 2) fhCentAcc->Fill(centrality);
+  //-------------------------------------------------------------------
+
 
   fhEventCuts->Fill("event_in",1);
 
