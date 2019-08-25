@@ -29,8 +29,10 @@
 #include "AliInputEventHandler.h"
 #include "AliESDInputHandler.h"
 #include "AliESDv0KineCuts.h"
+#include "AliMultSelection.h"
 #include "AliESDv0.h"
 #include "AliCentrality.h"
+#include "AliLog.h"
 
 #include "AliTRDdigitsManager.h"
 #include "AliTRDarrayADC.h"
@@ -38,10 +40,8 @@
 #include "TChain.h"
 #include "TFile.h"
 #include "TRandom.h"
+#include "THnSparse.h"
 
-//------------------------------ ST JOHN EDITS ---------------------------------
-#include "AliMultSelection.h"
-//------------------------------------------------------------------------------
 
 class TCanvas;
 class TAxis;
@@ -114,6 +114,23 @@ void AliTRDdigitsFilter::AcceptParticles(TString label, EPID_t pid,
   crit.fFraction  = fraction;
 
   fAcceptCriteria.push_back(crit);
+  AliInfoF("nCrit: %lu", fAcceptCriteria.size());
+}
+
+//________________________________________________________________________
+void AliTRDdigitsFilter::PrintSettings()
+{
+
+  AliInfo("Accept these particle classes:");
+  for (std::list<AcceptCrit>::iterator iCrit = fAcceptCriteria.begin();
+       iCrit != fAcceptCriteria.end(); iCrit++) {
+
+         AliInfoF("%10s: pidclass=%d, %f < pT(GeV/c) < %f",
+         iCrit->fLabel.Data(), iCrit->fPid, iCrit->fMinPt, iCrit->fMaxPt
+       );
+   }
+
+
 }
 
 //________________________________________________________________________
@@ -140,28 +157,39 @@ void AliTRDdigitsFilter::UserCreateOutputObjects()
   // statistics of accepted events
   fhEventCuts = new TH1F("EventCuts","statistics of event cuts",10,0.,10.);
 
+  // THnSparse for accepted tracks
+  const Int_t ncrit = fAcceptCriteria.size();
+  Int_t nbins[]   = {     ncrit,    30,   10,  10 };
+  Double_t xmin[] = {      -0.5,   0.0, -1.0, 0.0 };
+  Double_t xmax[] = { ncrit-0.5,  60.0,  1.0, 2*TMath::Pi() };
+
+  fhAcc = new THnSparseF("fhAcc", "accepted tracks", 4, nbins, xmin, xmax);
+
+  //fhAcc->GetAxis(0)->SetBinLabel(1,"foo");
+  fhAcc->GetAxis(1)->SetTitle("p_{T} (GeV/c)");
+  fhAcc->GetAxis(2)->SetTitle("#eta");
+  fhAcc->GetAxis(3)->SetTitle("#phi (rad)");
+
+
   // pT histograms
   fhPtTag  = new TH1F("fhPtTag",  "pT of PID-tagged tracks", 100,0.,20.);
   fhPtGood = new TH1F("fhPtGood", "pT after quality cuts",   100,0.,20.);
   fhPtAcc  = new TH1F("fhPtAcc",  "pT of accepted tracks",   100,0.,20.);
 
-  //------------------------- ST JOHN EDITS ------------------------------
+  // multiplicity histograms
   fhCent = new TH1F("fhCentralityAll", "Centrality of Events", 100, 0, 100);
   fhCentAcc = new TH1F("fhCentralityAccepted", "Centrality of Accepted Events",
                        100, 0, 100);
-  //----------------------------------------------------------------------
 
   // add everything to the list
+  fListQA->Add(fhAcc);
   fListQA->Add(fhArmenteros);
   fListQA->Add(fhEventCuts);
   fListQA->Add(fhPtTag);
   fListQA->Add(fhPtGood);
   fListQA->Add(fhPtAcc);
-
-  //------------------------- ST JOHN EDITS ------------------------------
   fListQA->Add(fhCent);
   fListQA->Add(fhCentAcc);
-  //----------------------------------------------------------------------
 
   PostData(1,fListQA);
 
@@ -230,9 +258,9 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
   //-------------------------------ST JOHN EDITS-----------------------
   Float_t centrality(0);
   //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
-  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));  
+  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));
   if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
-  
+
   fhCent->Fill(centrality);
 
   // select most central collisions
@@ -293,6 +321,13 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
      }
 
      if (keepTrack) {
+       Double_t data[4];
+       data[0] = fPidTags[iTrack];
+       data[1] = track->Pt();
+       data[2] = track->Eta();
+       data[3] = track->Phi();
+
+       fhAcc->Fill(data);
        fhPtAcc->Fill(track->Pt());
      }
 

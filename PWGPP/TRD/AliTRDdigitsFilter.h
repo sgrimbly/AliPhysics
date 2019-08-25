@@ -47,6 +47,7 @@ class Riostream;
 class TChain;
 class TArrayF;
 class TFile;
+class THnSparse;
 class TH2;
 class TF1;
 class TH1;
@@ -78,14 +79,7 @@ public:
   void AcceptParticles(TString label, EPID_t pid,
       Float_t minPt, Float_t maxPt, Float_t fraction);
 
-  //EPID_t GetPidTag(Int_t trackIndex) const;
-
-
-protected:
-
-  AliESDv0KineCuts *fV0cuts;        //! ESD V0 cuts
-
-  std::vector<EPID_t> fPidTags;     //! vector of PID infor for all tracks
+  void PrintSettings();
 
   struct AcceptCrit {
     TString fLabel;
@@ -95,7 +89,15 @@ protected:
     Float_t fFraction;
   };
 
-  std::list<AcceptCrit> fAcceptCriteria; //! criteria to accept tracks
+  std::list<AcceptCrit> fAcceptCriteria; // criteria to accept tracks
+
+
+protected:
+
+  AliESDv0KineCuts *fV0cuts;        //! ESD V0 cuts
+
+  std::vector<EPID_t> fPidTags;     //! vector of PID infor for all tracks
+
 
   void ReadDigits();
   void WriteDigits();
@@ -126,14 +128,14 @@ private:
   AliTRDdigitsManager* fDigMan;        //! digits manager
 
   // Histograms
-  TH2F *fhArmenteros;                 //! 2D V0 QA Hist
-  TH1F *fhEventCuts;                  //! statistics of event cuts
-  TH1F *fhPtTag;                      //! pT of PID-tagged tracks
-  TH1F *fhPtGood;                     //! pT spectrum after quality cuts
-  TH1F *fhPtAcc;                      //! pT spectrum of accepted tracks
-  //---------------------ST JOHN EDITS---------------------------------------
-  TH1F *fhCent;                       // Centrality of event
-  TH1F *fhCentAcc;                    // Accepted events based on centrality
+  THnSparse*  fhAcc;                        //! summary hist of all acc tracks
+  TH2F*       fhArmenteros;                 //! 2D V0 QA Hist
+  TH1F*       fhEventCuts;                  //! statistics of event cuts
+  TH1F*       fhPtTag;                      //! pT of PID-tagged tracks
+  TH1F*       fhPtGood;                     //! pT spectrum after quality cuts
+  TH1F*       fhPtAcc;                      //! pT spectrum of accepted track
+  TH1F*       fhCent;                       //! Centrality of event
+  TH1F*       fhCentAcc;                    //! Accepted events based on centrality
   //-------------------------------------------------------------------------
 
   //TH1F *fhPt[fgkNSpecies];            //! pT spectrum for different species
