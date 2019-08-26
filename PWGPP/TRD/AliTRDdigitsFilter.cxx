@@ -337,11 +337,12 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
     fhEventCuts->Fill("event_acc",1);
 
-    // load the digits from TRD.Digits.root
-    ReadDigits();
+    if (fDigitsInputFile && fDigitsOutputFile) {
+      // load the digits from TRD.Digits.root
+      ReadDigits();
 
-    // store the digits in TRD.FltDigits.root
-    WriteDigits();
+      // store the digits in TRD.FltDigits.root
+      WriteDigits();
   }
 
   PostData(1,fListQA);
@@ -351,8 +352,19 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 //________________________________________________________________________
 void AliTRDdigitsFilter::ReadDigits()
 {
+  if (!fDigitsInputFile) {
+    AliError("Digits file not open");
+    return;
+  }
+
   TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
 						 fEventNoInFile));
+
+  if (!tr) {
+    AliErrorF("Digits tree for event %d not found", fEventNoInFile);
+    return;
+  }
+
   for (Int_t det=0; det<540; det++) {
     fDigMan->ClearArrays(det);
     fDigMan->ClearIndexes(det);
@@ -365,6 +377,11 @@ void AliTRDdigitsFilter::ReadDigits()
 //________________________________________________________________________
 void AliTRDdigitsFilter::WriteDigits()
 {
+  if (!fDigitsOutputFile) {
+    AliError("Filtered digits file not open");
+    return;
+  }
+
   TDirectory* evdir =
     fDigitsOutputFile->mkdir(Form("Event%d", fEventNoInFile),
 			     Form("Event%d", fEventNoInFile));
