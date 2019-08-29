@@ -279,8 +279,7 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
   // check for a valid event vertex
   const AliESDVertex* fESDEventvertex = esdEvent->GetPrimaryVertexTracks();
-  if (!fESDEventvertex)
-    return;
+  if (!fESDEventvertex) return;
 
   Int_t ncontr = fESDEventvertex->GetNContributors();
   if (ncontr <= 0) return;
@@ -339,22 +338,22 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
     if (fDigitsInputFile && fDigitsOutputFile) {
       // load the digits from TRD.Digits.root
-      ReadDigits();
+      bool success = ReadDigits();
 
       // store the digits in TRD.FltDigits.root
-      WriteDigits();
+      if(success) WriteDigits();
+    }
   }
 
   PostData(1,fListQA);
 }
 
-
 //________________________________________________________________________
-void AliTRDdigitsFilter::ReadDigits()
+bool AliTRDdigitsFilter::ReadDigits()
 {
   if (!fDigitsInputFile) {
     AliError("Digits file not open");
-    return;
+    return false;
   }
 
   TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
@@ -362,7 +361,7 @@ void AliTRDdigitsFilter::ReadDigits()
 
   if (!tr) {
     AliErrorF("Digits tree for event %d not found", fEventNoInFile);
-    return;
+    return false;
   }
 
   for (Int_t det=0; det<540; det++) {
@@ -372,6 +371,7 @@ void AliTRDdigitsFilter::ReadDigits()
 
   fDigMan->ReadDigits(tr);
   delete tr;
+  return true;
 }
 
 //________________________________________________________________________
