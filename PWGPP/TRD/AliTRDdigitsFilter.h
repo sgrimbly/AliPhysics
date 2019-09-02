@@ -99,7 +99,7 @@ protected:
   std::vector<EPID_t> fPidTags;     //! vector of PID infor for all tracks
 
 
-  bool ReadDigits();
+  Bool_t ReadDigits();
   void WriteDigits();
 
   //void SetupV0qa();

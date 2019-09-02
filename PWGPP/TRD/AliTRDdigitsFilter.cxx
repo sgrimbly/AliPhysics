@@ -254,20 +254,6 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
   //called for each event
   //
 
-
-  //-------------------------------ST JOHN EDITS-----------------------
-  Float_t centrality(0);
-  //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
-  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));
-  if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
-
-  fhCent->Fill(centrality);
-
-  // select most central collisions
-  if(centrality < 2) fhCentAcc->Fill(centrality);
-  //-------------------------------------------------------------------
-
-
   fhEventCuts->Fill("event_in",1);
 
   if (!esdEvent) {
@@ -285,6 +271,23 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
   if (ncontr <= 0) return;
 
   fhEventCuts->Fill("event_vtx",1);
+
+
+  //-------------------------------ST JOHN EDITS-----------------------
+  Float_t centrality(0);
+  //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
+  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));
+  if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
+
+  fhCent->Fill(centrality);
+
+  // select most central collisions
+  if(centrality > 1) return; //Don't accept collisions with centrality > 0.01% 
+  fhEventCuts->Fill("event_centr",1);
+  fhCentAcc->Fill(centrality);
+  //-------------------------------------------------------------------
+
+
 
   Bool_t keepEvent = kFALSE;
 
@@ -338,7 +341,7 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
     if (fDigitsInputFile && fDigitsOutputFile) {
       // load the digits from TRD.Digits.root
-      bool success = ReadDigits();
+      Bool_t success = ReadDigits();
 
       // store the digits in TRD.FltDigits.root
       if(success) WriteDigits();
@@ -349,11 +352,11 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 }
 
 //________________________________________________________________________
-bool AliTRDdigitsFilter::ReadDigits()
+Bool_t AliTRDdigitsFilter::ReadDigits()
 {
   if (!fDigitsInputFile) {
     AliError("Digits file not open");
-    return false;
+    return kFALSE;
   }
 
   TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
@@ -361,7 +364,7 @@ bool AliTRDdigitsFilter::ReadDigits()
 
   if (!tr) {
     AliErrorF("Digits tree for event %d not found", fEventNoInFile);
-    return false;
+    return kFALSE;
   }
 
   for (Int_t det=0; det<540; det++) {
@@ -371,7 +374,7 @@ bool AliTRDdigitsFilter::ReadDigits()
 
   fDigMan->ReadDigits(tr);
   delete tr;
-  return true;
+  return kTRUE;
 }
 
 //________________________________________________________________________
