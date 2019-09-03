@@ -66,21 +66,14 @@ ClassImp(AliTRDdigitsFilter)
 
 //________________________________________________________________________
 AliTRDdigitsFilter::AliTRDdigitsFilter(const char *name)
-    : AliAnalysisTaskSE(name), fV0cuts(0x0), fPidTags(0x0),
-    fESDEvent(0), fOutputContainer(0), fESDtrackCuts(0),
-    fESDtrackCutsV0(0), fListQA(0x0),
-    fDigitsInputFile(0), fDigitsOutputFile(0),
-    fEventNoInFile(-1), fDigMan(0)
+    : AliTRDdigitsTask(name)
 {
-  //
-  // Constructor
-  //
-
-  fDigMan = new AliTRDdigitsManager;
-  fDigMan->CreateArrays();
 
   // V0 Kine cuts
   fV0cuts = new AliESDv0KineCuts();
+
+  SetDigitsInputFilename("TRD.Digits.root");
+  SetDigitsOutputFilename("TRD.FltDigits.root");
 
   DefineInput(0, TChain::Class());
   DefineOutput(1, TList::Class());
@@ -95,17 +88,15 @@ AliTRDdigitsFilter::~AliTRDdigitsFilter()
   // Destructor
   //
 
-  delete fDigitsInputFile;
-  delete fDigitsOutputFile;
-  delete fDigMan;
   delete fV0cuts;
 }
 
-void AliTRDdigitsFilter::AcceptParticles(TString label, EPID_t pid,
+//________________________________________________________________________
+void AliTRDdigitsFilter::AcceptTracks(TString label, EPID_t pid,
     Float_t minPt, Float_t maxPt, Float_t fraction)
 {
 
-  AcceptCrit crit;
+  TrackCrit crit;
 
   crit.fLabel     = label;
   crit.fPid       = pid;
@@ -113,8 +104,24 @@ void AliTRDdigitsFilter::AcceptParticles(TString label, EPID_t pid,
   crit.fMaxPt     = maxPt;
   crit.fFraction  = fraction;
 
-  fAcceptCriteria.push_back(crit);
-  AliInfoF("nCrit: %lu", fAcceptCriteria.size());
+  fTrackCriteria.push_back(crit);
+  AliInfoF("nTrackCrit: %lu", fTrackCriteria.size());
+}
+
+//________________________________________________________________________
+void AliTRDdigitsFilter::AcceptEvents(TString label,
+    Float_t minCent, Float_t maxCent, Float_t fraction)
+{
+
+  EventCrit crit;
+
+  crit.fLabel     = label;
+  crit.fMinCent     = minCent;
+  crit.fMaxCent     = maxCent;
+  crit.fFraction  = fraction;
+
+  fEventCriteria.push_back(crit);
+  AliInfoF("nEventCrit: %lu", fEventCriteria.size());
 }
 
 //________________________________________________________________________
@@ -122,8 +129,8 @@ void AliTRDdigitsFilter::PrintSettings()
 {
 
   AliInfo("Accept these particle classes:");
-  for (std::list<AcceptCrit>::iterator iCrit = fAcceptCriteria.begin();
-       iCrit != fAcceptCriteria.end(); iCrit++) {
+  for (std::vector<TrackCrit>::iterator iCrit = fTrackCriteria.begin();
+       iCrit != fTrackCriteria.end(); iCrit++) {
 
          AliInfoF("%10s: pidclass=%d, %f < pT(GeV/c) < %f",
          iCrit->fLabel.Data(), iCrit->fPid, iCrit->fMinPt, iCrit->fMaxPt
@@ -147,21 +154,36 @@ void AliTRDdigitsFilter::UserCreateOutputObjects()
 
 
   OpenFile(1);
-  fListQA=new TList;
-  fListQA->SetOwner();
+  fOutputList=new TList;
+  fOutputList->SetOwner();
 
-  // V0 QA histograms
-  fhArmenteros  = new TH2F( "Armenteros","Armenteros plot",
-                            200,-1.,1.,200,0.,0.4);
+  CreateV0Plots();
 
   // statistics of accepted events
-  fhEventCuts = new TH1F("EventCuts","statistics of event cuts",10,0.,10.);
+  int nClasses = fEventCriteria.size() + fTrackCriteria.size();
+  fhEventCuts = new TH1F("EventCuts","statistics of event cuts",
+    nClasses+4, 0., nClasses+4.0);
+
+  fhEventCuts->GetXaxis()->SetBinLabel(1,"event_in");
+  fhEventCuts->GetXaxis()->SetBinLabel(2,"event_esd");
+  fhEventCuts->GetXaxis()->SetBinLabel(3,"event_vtx");
+  fhEventCuts->GetXaxis()->SetBinLabel(4,"event_acc");
+
+  for (Int_t i = 0; i<fEventCriteria.size(); i++) {
+    fhEventCuts->GetXaxis()->SetBinLabel(i+5, "event_acc_"+fEventCriteria[i].fLabel);
+  }
+
+  for (Int_t i = 0; i<fTrackCriteria.size(); i++) {
+    fhEventCuts->GetXaxis()->SetBinLabel( i+5+fEventCriteria.size(),
+    "event_acc_"+fTrackCriteria[i].fLabel);
+  }
+
 
   // THnSparse for accepted tracks
-  const Int_t ncrit = fAcceptCriteria.size();
-  Int_t nbins[]   = {     ncrit,    30,   10,  10 };
-  Double_t xmin[] = {      -0.5,   0.0, -1.0, 0.0 };
-  Double_t xmax[] = { ncrit-0.5,  60.0,  1.0, 2*TMath::Pi() };
+  const Int_t ntc = 2<<fTrackCriteria.size();
+  Int_t nbins[]   = { ntc,    30,   10,  10 };
+  Double_t xmin[] = { 0.0,   0.0, -1.0, 0.0 };
+  Double_t xmax[] = { float(ntc),  60.0,  1.0, 2*TMath::Pi() };
 
   fhAcc = new THnSparseF("fhAcc", "accepted tracks", 4, nbins, xmin, xmax);
 
@@ -170,78 +192,82 @@ void AliTRDdigitsFilter::UserCreateOutputObjects()
   fhAcc->GetAxis(2)->SetTitle("#eta");
   fhAcc->GetAxis(3)->SetTitle("#phi (rad)");
 
-
   // pT histograms
   fhPtTag  = new TH1F("fhPtTag",  "pT of PID-tagged tracks", 100,0.,20.);
   fhPtGood = new TH1F("fhPtGood", "pT after quality cuts",   100,0.,20.);
   fhPtAcc  = new TH1F("fhPtAcc",  "pT of accepted tracks",   100,0.,20.);
 
   // multiplicity histograms
-  fhCent = new TH1F("fhCentralityAll", "Centrality of Events", 100, 0, 100);
+  fhCent = new TH1F("fhCentralityAll", "Centrality of Events", 105, 0., 105.);
   fhCentAcc = new TH1F("fhCentralityAccepted", "Centrality of Accepted Events",
-                       100, 0, 100);
+                       105, 0., 105.);
 
   // add everything to the list
-  fListQA->Add(fhAcc);
-  fListQA->Add(fhArmenteros);
-  fListQA->Add(fhEventCuts);
-  fListQA->Add(fhPtTag);
-  fListQA->Add(fhPtGood);
-  fListQA->Add(fhPtAcc);
-  fListQA->Add(fhCent);
-  fListQA->Add(fhCentAcc);
+  fOutputList->Add(fhAcc);
+  fOutputList->Add(fhEventCuts);
+  fOutputList->Add(fhPtTag);
+  fOutputList->Add(fhPtGood);
+  fOutputList->Add(fhPtAcc);
+  fOutputList->Add(fhCent);
+  fOutputList->Add(fhCentAcc);
 
-  PostData(1,fListQA);
+  PostData(1,fOutputList);
 
 
 }
 
-//_____________________________________________________________________________
-Bool_t AliTRDdigitsFilter::UserNotify()
-{
-  delete fDigitsInputFile;
-  delete fDigitsOutputFile;
-
-  AliESDInputHandler *esdH = dynamic_cast<AliESDInputHandler*> (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
-
-  TString ofname = esdH->GetTree()->GetCurrentFile()->GetName();
-  TString ifname = ofname;
-
-  ifname.ReplaceAll("AliESDs.root", "TRD.Digits.root");
-  ofname.ReplaceAll("AliESDs.root", "TRD.FltDigits.root");
-
-  fDigitsInputFile  = new TFile(ifname);
-  fDigitsOutputFile = new TFile(ofname,"RECREATE");
-
-  fEventNoInFile = 0;
-
-  return kTRUE;
-}
+// //_____________________________________________________________________________
+// Bool_t AliTRDdigitsFilter::UserNotify()
+// {
+//   delete fDigitsInputFile;
+//   delete fDigitsOutputFile;
+//
+//   AliESDInputHandler *esdH = dynamic_cast<AliESDInputHandler*> (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
+//
+//   TString ofname = esdH->GetTree()->GetCurrentFile()->GetName();
+//   TString ifname = ofname;
+//
+//   ifname.ReplaceAll("AliESDs.root", "TRD.Digits.root");
+//   ofname.ReplaceAll("AliESDs.root", "TRD.FltDigits.root");
+//
+//   fDigitsInputFile  = new TFile(ifname);
+//   fDigitsOutputFile = new TFile(ofname,"RECREATE");
+//
+//   fEventNoInFile = 0;
+//
+//   return kTRUE;
+// }
 
 //_____________________________________________________________________________
 void AliTRDdigitsFilter::UserExec(Option_t *)
 {
-    //
-    //calls the Process function
-    //
+  // -----------------------------------------------------------------
+  // -----------------------------------------------------------------
+  // IMPORTANT: call NextEvent() for book-keeping
+  // -----------------------------------------------------------------
+  NextEvent();
+  // -----------------------------------------------------------------
+  // -----------------------------------------------------------------
 
-    AliESDInputHandler *esdH = dynamic_cast<AliESDInputHandler*> (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
 
-    if (!esdH) {
-      printf("ERROR: Could not get ESDInputHandler \n");
-    }
-    else fESDEvent = (AliESDEvent *) esdH->GetEvent();
+  //
+  //calls the Process function
+  //
 
-    // allocate space for the PID tags
-    fPidTags.resize(fESDEvent->GetNumberOfTracks());
+  AliESDInputHandler *esdH = dynamic_cast<AliESDInputHandler*> (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
 
-    FillV0PIDlist();
-    Process(fESDEvent);
+  if (!esdH) {
+    printf("ERROR: Could not get ESDInputHandler \n");
+  }
+  else fESDevent = (AliESDEvent *) esdH->GetEvent();
 
-    PostData(1,fListQA);
+  // allocate space for the PID tags
+  fPidTags.resize(fESDevent->GetNumberOfTracks());
 
-    // increment the event counter for this file
-    fEventNoInFile++;
+  FillV0PIDlist();
+  Process(fESDevent);
+
+  PostData(1,fOutputList);
 
 }
 
@@ -273,27 +299,48 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
   fhEventCuts->Fill("event_vtx",1);
 
 
-  //-------------------------------ST JOHN EDITS-----------------------
-  Float_t centrality(0);
-  //AliMultSelection *multSelection =static_cast<AliMultSelection*>(fAOD->FindListObject("MultSelection"));
-  AliMultSelection *multSelection =static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));
-  if(multSelection) centrality = multSelection->GetMultiplicityPercentile("V0M");
+  //-------------------------------------------------------------------
+  Int_t keepEvent = 0;
+  Int_t keepNTracks = 0;
 
-  fhCent->Fill(centrality);
+  Int_t nEventCrit = fEventCriteria.size();
+  Int_t nTrackCrit = fTrackCriteria.size();
 
-  // select most central collisions
-  if(centrality > 1) return; //Don't accept collisions with centrality > 0.01% 
-  fhEventCuts->Fill("event_centr",1);
-  fhCentAcc->Fill(centrality);
   //-------------------------------------------------------------------
 
+  AliMultSelection *multSelection =
+    static_cast<AliMultSelection*>(esdEvent->FindListObject("MultSelection"));
 
+  if(multSelection) {
 
-  Bool_t keepEvent = kFALSE;
+    Float_t centrality = multSelection->GetMultiplicityPercentile("V0M");
 
-  for (int iTrack=0; iTrack<fPidTags.size(); iTrack++) {
+    fhCent->Fill(centrality);
 
-    Bool_t keepTrack = kFALSE;
+    for (Int_t i = 0; i<nEventCrit; i++) {
+
+      // check event criteria
+      if ( fEventCriteria[i].fMinCent > centrality) continue;
+      if ( fEventCriteria[i].fMaxCent <= centrality) continue;
+
+      // accept given fraction of events
+      if ( gRandom->Uniform() > fEventCriteria[i].fFraction ) continue;
+
+      keepEvent |= 1<<i;
+
+   }
+
+   if (keepEvent) {
+     fhCentAcc->Fill(centrality);
+   }
+
+ }
+
+ //-------------------------------------------------------------------
+
+ for (int iTrack=0; iTrack<fPidTags.size(); iTrack++) {
+
+    Int_t keepTrack = 0;
 
     if (fPidTags[iTrack] == kPidUndef) continue;
     if (fPidTags[iTrack] == kPidError) continue;
@@ -307,24 +354,24 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
     fhPtGood->Fill(track->Pt());
 
-    for (std::list<AcceptCrit>::iterator iCrit = fAcceptCriteria.begin();
-         iCrit != fAcceptCriteria.end(); iCrit++) {
+    for (Int_t i = 0; i<nTrackCrit; i++) {
 
         // check track criteria
-        if ( iCrit->fPid != fPidTags[iTrack] ) continue;
-        if ( iCrit->fMinPt > track->Pt()) continue;
-        if ( iCrit->fMaxPt < track->Pt()) continue;
+        if ( fTrackCriteria[i].fPid != fPidTags[iTrack] ) continue;
+        if ( fTrackCriteria[i].fMinPt > track->Pt()) continue;
+        if ( fTrackCriteria[i].fMaxPt < track->Pt()) continue;
 
         // accept given fraction of tracks
-        if ( gRandom->Uniform() > iCrit->fFraction ) continue;
+        if ( gRandom->Uniform() > fTrackCriteria[i].fFraction ) continue;
 
-        keepEvent = kTRUE;
-        keepTrack = kTRUE;
+        keepEvent |= 1<<(nEventCrit + i);
+        keepTrack |= 1<<i;
+        keepNTracks++;
      }
 
      if (keepTrack) {
        Double_t data[4];
-       data[0] = fPidTags[iTrack];
+       data[0] = keepTrack;
        data[1] = track->Pt();
        data[2] = track->Eta();
        data[3] = track->Phi();
@@ -339,128 +386,82 @@ void AliTRDdigitsFilter::Process(AliESDEvent *const esdEvent)
 
     fhEventCuts->Fill("event_acc",1);
 
-    if (fDigitsInputFile && fDigitsOutputFile) {
-      // load the digits from TRD.Digits.root
-      Bool_t success = ReadDigits();
-
-      // store the digits in TRD.FltDigits.root
-      if(success) WriteDigits();
+    for (Int_t i = 0; i<nEventCrit; i++) {
+      if (keepEvent & ( 1 << i ) ) {
+        fhEventCuts->Fill("event_acc_"+fEventCriteria[i].fLabel,1);
+      }
     }
+
+    for (Int_t i = 0; i<nTrackCrit; i++) {
+      if (keepEvent & ( 1 << (nEventCrit+i) ) ) {
+        fhEventCuts->Fill("event_acc_"+fTrackCriteria[i].fLabel,1);
+      }
+    }
+
+    if (ReadDigits()) {
+      WriteDigits();
+    }
+
   }
 
-  PostData(1,fListQA);
+  PostData(1,fOutputList);
 }
 
-//________________________________________________________________________
-Bool_t AliTRDdigitsFilter::ReadDigits()
-{
-  if (!fDigitsInputFile) {
-    AliError("Digits file not open");
-    return kFALSE;
-  }
-
-  TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
-						 fEventNoInFile));
-
-  if (!tr) {
-    AliErrorF("Digits tree for event %d not found", fEventNoInFile);
-    return kFALSE;
-  }
-
-  for (Int_t det=0; det<540; det++) {
-    fDigMan->ClearArrays(det);
-    fDigMan->ClearIndexes(det);
-  }
-
-  fDigMan->ReadDigits(tr);
-  delete tr;
-  return kTRUE;
-}
-
-//________________________________________________________________________
-void AliTRDdigitsFilter::WriteDigits()
-{
-  if (!fDigitsOutputFile) {
-    AliError("Filtered digits file not open");
-    return;
-  }
-
-  TDirectory* evdir =
-    fDigitsOutputFile->mkdir(Form("Event%d", fEventNoInFile),
-			     Form("Event%d", fEventNoInFile));
-
-  evdir->Write();
-  evdir->cd();
-
-  TTree* tr = new TTree("TreeD", "TreeD");
-  fDigMan->MakeBranch(tr);
-  fDigMan->WriteDigits();
-  delete tr;
-}
-
-
-//________________________________________________________________________
-void AliTRDdigitsFilter::Terminate(const Option_t *)
-{
-    //
-    // Terminate function
-    //
-}
+// //________________________________________________________________________
+// Bool_t AliTRDdigitsFilter::ReadDigits()
+// {
+//   if (!fDigitsInputFile) {
+//     AliError("Digits file not open");
+//     return kFALSE;
+//   }
+//
+//   TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
+// 						 fEventNoInFile));
+//
+//   if (!tr) {
+//     AliErrorF("Digits tree for event %d not found", fEventNoInFile);
+//     return kFALSE;
+//   }
+//
+//   for (Int_t det=0; det<540; det++) {
+//     fDigMan->ClearArrays(det);
+//     fDigMan->ClearIndexes(det);
+//   }
+//
+//   fDigMan->ReadDigits(tr);
+//   delete tr;
+//   return kTRUE;
+// }
+//
+// //________________________________________________________________________
+// void AliTRDdigitsFilter::WriteDigits()
+// {
+//   if (!fDigitsOutputFile) {
+//     AliError("Filtered digits file not open");
+//     return;
+//   }
+//
+//   TDirectory* evdir =
+//     fDigitsOutputFile->mkdir(Form("Event%d", fEventNoInFile),
+// 			     Form("Event%d", fEventNoInFile));
+//
+//   evdir->Write();
+//   evdir->cd();
+//
+//   TTree* tr = new TTree("TreeD", "TreeD");
+//   fDigMan->MakeBranch(tr);
+//   fDigMan->WriteDigits();
+//   delete tr;
+// }
 
 
-//______________________________________________________________________________
-void AliTRDdigitsFilter::FillV0PIDlist(){
-
-  //
-  // Fill the PID object arrays holding the pointers to identified particle tracks
-  //
-
-  // Dynamic cast to ESD events (DO NOTHING for AOD events)
-  AliESDEvent *event = dynamic_cast<AliESDEvent *>(InputEvent());
-  if ( !event )  return;
-
-
-  // V0 selection
-  // set event
-  fV0cuts->SetEvent(event);
-
-
-  // loop over V0 particles
-  for(Int_t iv0=0; iv0<event->GetNumberOfV0s();iv0++){
-
-    AliESDv0 *v0 = (AliESDv0 *) event->GetV0(iv0);
-
-    if(!v0) continue;
-    if(v0->GetOnFlyStatus()) continue;
-
-    // Get the particle selection
-    Bool_t foundV0 = kFALSE;
-    Int_t pdgV0, pdgP, pdgN;
-    foundV0 = fV0cuts->ProcessV0(v0, pdgV0, pdgP, pdgN);
-    if(!foundV0) continue;
-    Int_t iTrackP = v0->GetPindex();  // positive track
-    Int_t iTrackN = v0->GetNindex();  // negative track
-
-    // v0 Armenteros plot (QA)
-    Float_t armVar[2] = {0.0,0.0};
-    fV0cuts->Armenteros(v0, armVar);
-    // if ( !(TMath::Power(armVar[0]/0.95,2)+TMath::Power(armVar[1]/0.05,2) < 1) ) continue;
-
-    if(fListQA&&fhArmenteros) fhArmenteros->Fill(armVar[0],armVar[1]);
-
-    // fill the tags
-
-    if( pdgP ==   -11 ) { fPidTags[iTrackP] = kPidV0Electron; }
-    if( pdgN ==    11 ) { fPidTags[iTrackN] = kPidV0Electron; }
-
-    if( pdgP ==   211 ) { fPidTags[iTrackP] = kPidV0Pion; }
-    if( pdgN ==  -211 ) { fPidTags[iTrackN] = kPidV0Pion; }
-
-    if( pdgP ==  2212 ) { fPidTags[iTrackP] = kPidV0Proton; }
-    if( pdgN == -2212 ) { fPidTags[iTrackN] = kPidV0Proton; }
-
-  }
-}
+// //________________________________________________________________________
+// void AliTRDdigitsFilter::Terminate(const Option_t *)
+// {
+//     //
+//     // Terminate function
+//     //
+// }
 
 
 //________________________________________________________________________
