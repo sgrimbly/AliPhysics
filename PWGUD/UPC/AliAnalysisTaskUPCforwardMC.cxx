@@ -242,6 +242,12 @@ AliAnalysisTaskUPCforwardMC::AliAnalysisTaskUPCforwardMC()
       fMCPhiHelicityFrameTwentyfiveBinsH(0),
       fTildePhiHelicityFrameTwentyfiveBinsH(0),
       fMCTildePhiHelicityFrameTwentyfiveBinsH(0),
+      fCosThetaCsFrameTwentyfiveBinsH(0),
+      fMCCosThetaCsFrameTwentyfiveBinsH(0),
+      fPhiCsFrameTwentyfiveBinsH(0),
+      fMCPhiCsFrameTwentyfiveBinsH(0),
+      fTildePhiCsFrameTwentyfiveBinsH(0),
+      fMCTildePhiCsFrameTwentyfiveBinsH(0),
       fPhiHelicityFrameMyBinningH(0),
       fMCPhiHelicityFrameMyBinningH(0),
       fInvariantMassDistributionOnlyCosThetaForSignalExtractionHelicityFrameMyVariableBinningH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -249,7 +255,27 @@ AliAnalysisTaskUPCforwardMC::AliAnalysisTaskUPCforwardMC()
                                                                                                 0, 0, 0, 0, 0, 0 },
       fInvariantMassDistributionOnlyPhiForSignalExtractionHelicityFrameMyVariableBinningH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+                                                                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH(0),
+      fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH(0)
 {
     // default constructor, don't allocate memory here!
     // this is used by root for IO purposes, it needs to remain empty
@@ -416,6 +442,12 @@ AliAnalysisTaskUPCforwardMC::AliAnalysisTaskUPCforwardMC( const char* name )
       fMCPhiHelicityFrameTwentyfiveBinsH(0),
       fTildePhiHelicityFrameTwentyfiveBinsH(0),
       fMCTildePhiHelicityFrameTwentyfiveBinsH(0),
+      fCosThetaCsFrameTwentyfiveBinsH(0),
+      fMCCosThetaCsFrameTwentyfiveBinsH(0),
+      fPhiCsFrameTwentyfiveBinsH(0),
+      fMCPhiCsFrameTwentyfiveBinsH(0),
+      fTildePhiCsFrameTwentyfiveBinsH(0),
+      fMCTildePhiCsFrameTwentyfiveBinsH(0),
       fPhiHelicityFrameMyBinningH(0),
       fMCPhiHelicityFrameMyBinningH(0),
       fInvariantMassDistributionOnlyCosThetaForSignalExtractionHelicityFrameMyVariableBinningH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -423,7 +455,27 @@ AliAnalysisTaskUPCforwardMC::AliAnalysisTaskUPCforwardMC( const char* name )
                                                                                                 0, 0, 0, 0, 0, 0 },
       fInvariantMassDistributionOnlyPhiForSignalExtractionHelicityFrameMyVariableBinningH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+                                                                                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                               0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                    0, 0, 0, 0, 0 },
+      fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH(0),
+      fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH(0)
 {
     // FillGoodRunVector(fVectorGoodRunNumbers);
     for( Int_t iRun = 0; iRun < 60000; iRun++) {
@@ -1243,6 +1295,9 @@ void AliAnalysisTaskUPCforwardMC::UserCreateOutputObjects()
     fOutputList->Add(fInvariantMassDistributionOnlyPhiForSignalExtractionHelicityFrameMyVariableBinningH[iPhiBins]);
   }
 
+  /* - HELICITY FRAME ANALYSIS.
+   * -
+   */
   fCosThetaHelicityFrameTwentyfiveBinsH =
         new TH1F( "fCosThetaHelicityFrameTwentyfiveBinsH",
                   "fCosThetaHelicityFrameTwentyfiveBinsH",
@@ -1286,6 +1341,152 @@ void AliAnalysisTaskUPCforwardMC::UserCreateOutputObjects()
                   25, 0, 2. * 3.14
                   );
   fOutputList->Add(fMCTildePhiHelicityFrameTwentyfiveBinsH);
+
+  /* - COLLINS-SOPER ANALYSIS
+   * -
+   */
+  fCosThetaCsFrameTwentyfiveBinsH =
+        new TH1F( "fCosThetaCsFrameTwentyfiveBinsH",
+                  "fCosThetaCsFrameTwentyfiveBinsH",
+                  25, -1, 1
+                  );
+  fOutputList->Add(fCosThetaCsFrameTwentyfiveBinsH);
+
+  fMCCosThetaCsFrameTwentyfiveBinsH =
+        new TH1F( "fMCCosThetaCsFrameTwentyfiveBinsH",
+                  "fMCCosThetaCsFrameTwentyfiveBinsH",
+                  25, -1, 1
+                  );
+  fOutputList->Add(fMCCosThetaCsFrameTwentyfiveBinsH);
+
+  fPhiCsFrameTwentyfiveBinsH =
+        new TH1F( "fPhiCsFrameTwentyfiveBinsH",
+                  "fPhiCsFrameTwentyfiveBinsH",
+                  25, -3.14, 3.14
+                  );
+  fOutputList->Add(fPhiCsFrameTwentyfiveBinsH);
+
+  fMCPhiCsFrameTwentyfiveBinsH =
+        new TH1F( "fMCPhiCsFrameTwentyfiveBinsH",
+                  "fMCPhiCsFrameTwentyfiveBinsH",
+                  25, -3.14, 3.14
+                  );
+  fOutputList->Add(fMCPhiCsFrameTwentyfiveBinsH);
+
+  fTildePhiCsFrameTwentyfiveBinsH =
+        new TH1F( "fTildePhiCsFrameTwentyfiveBinsH",
+                  "fTildePhiCsFrameTwentyfiveBinsH",
+                  // 25, -3.14*7.0*0.25, 3.14*3.0*0.25
+                  25, 0, 2. * 3.14
+                  );
+  fOutputList->Add(fTildePhiCsFrameTwentyfiveBinsH);
+
+  fMCTildePhiCsFrameTwentyfiveBinsH =
+        new TH1F( "fMCTildePhiCsFrameTwentyfiveBinsH",
+                  "fMCTildePhiCsFrameTwentyfiveBinsH",
+                  // 25, -3.14*7.0*0.25, 3.14*3.0*0.25
+                  25, 0, 2. * 3.14
+                  );
+  fOutputList->Add(fMCTildePhiCsFrameTwentyfiveBinsH);
+
+  /* - Invariant mass distributions for signal extraction for POLARISATION.
+   * - The usage will be:    histo[CosTheta][Phi];
+   * - My variable binning.
+   * -
+   * - NOTE: this is the official binning I am using
+   * -       for the analysis.
+   * -       I am doing both a HELICITY frame analysis
+   * -       and a COLLINS-SOPER.
+   * -
+   */
+  fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH = new TH1F**[7];
+  for( Int_t iCosTheta = 0; iCosTheta < 7; iCosTheta++ ){
+    fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH[iCosTheta] = new TH1F*[20];
+    for( Int_t iPhi = 0; iPhi < 20; iPhi++ ){
+      fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH[iCosTheta][iPhi] =
+          new TH1F( Form("fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH_%d_%d", iCosTheta, iPhi),
+                    Form("fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH_%d_%d", iCosTheta, iPhi),
+                    2000, 0, 20
+                    );
+      fOutputList->Add(fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH[iCosTheta][iPhi]);
+    }
+  }
+
+  fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH = new TH1F**[7];
+  for( Int_t iCosTheta = 0; iCosTheta < 7; iCosTheta++ ){
+    fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH[iCosTheta] = new TH1F*[20];
+    for( Int_t iPhi = 0; iPhi < 20; iPhi++ ){
+      fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH[iCosTheta][iPhi] =
+          new TH1F( Form("fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH_%d_%d", iCosTheta, iPhi),
+                    Form("fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH_%d_%d", iCosTheta, iPhi),
+                    2000, 0, 20
+                    );
+      fOutputList->Add(fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH[iCosTheta][iPhi]);
+    }
+  }
+
+  /* -
+   * - FINAL POLARISATION ANALYSIS.
+   * - HELICITY
+   */
+  for(Int_t iCosThetaBins = 0; iCosThetaBins < 25; iCosThetaBins++ ){
+    fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH[iCosThetaBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH_%d", iCosThetaBins),
+                Form("fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH_%d", iCosThetaBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH[iCosThetaBins]);
+  }
+
+  for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++ ){
+    fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH[iPhiBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH_%d", iPhiBins),
+                Form("fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH_%d", iPhiBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH[iPhiBins]);
+  }
+
+  for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++ ){
+    fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH[iPhiBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH_%d", iPhiBins),
+                Form("fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH_%d", iPhiBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH[iPhiBins]);
+  }
+
+  /* -
+   * - FINAL POLARISATION ANALYSIS.
+   * - COLLINS-SOPER
+   */
+  for(Int_t iCosThetaBins = 0; iCosThetaBins < 25; iCosThetaBins++ ){
+    fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH[iCosThetaBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH_%d", iCosThetaBins),
+                Form("fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH_%d", iCosThetaBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH[iCosThetaBins]);
+  }
+
+  for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++ ){
+    fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH[iPhiBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH_%d", iPhiBins),
+                Form("fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH_%d", iPhiBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH[iPhiBins]);
+  }
+
+  for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++ ){
+    fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH[iPhiBins] = new TH1F(
+                Form("fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH_%d", iPhiBins),
+                Form("fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH_%d", iPhiBins),
+                2000, 0, 20
+                );
+    fOutputList->Add(fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH[iPhiBins]);
+  }
+
 
   //_______________________________
   // - End of the function
@@ -2002,18 +2203,37 @@ void AliAnalysisTaskUPCforwardMC::UserExec(Option_t *)
 
     /* - NEW: analysis with purity of the binning
      * - above 80% in CosTheta.
+     * -
+     |* - NB: FINAL INCARNATION OF THE ANALYSIS
      */
     if ( (possibleJPsiCopy.Pt() < 0.25) && (possibleJPsiCopy.Mag() < 3.35) && (possibleJPsiCopy.Mag() > 2.85) ) {
           Double_t CosThetaHelicityFrameValue10 = CosThetaHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
           Double_t PhiHelicityFrameValue10      =   CosPhiHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
           Double_t TildePhiPositiveCosTheta     = PhiHelicityFrameValue10 - 0.25 * 3.14;
           Double_t TildePhiNegativeCosTheta     = PhiHelicityFrameValue10 - 0.75 * 3.14;
+
+          Double_t CosThetaCollinsSoperValue   = CosThetaCollinsSoper(  muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t PhiCollinsSoperValue        =   CosPhiCollinsSoper(  muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t TildePhiPositiveCosThetaCS  = PhiCollinsSoperValue - 0.25 * 3.14;
+          Double_t TildePhiNegativeCosThetaCS  = PhiCollinsSoperValue - 0.75 * 3.14;
+
           if( TildePhiPositiveCosTheta < 0. ) {
             TildePhiPositiveCosTheta += 2 * TMath::Pi();
           }
           if( TildePhiNegativeCosTheta < 0. ) {
             TildePhiNegativeCosTheta += 2 * TMath::Pi();
           }
+
+          if( TildePhiPositiveCosThetaCS < 0. ) {
+            TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+          }
+          if( TildePhiNegativeCosThetaCS < 0. ) {
+            TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+          }
+
+          /* - HELICITY FRAME ANALYSIS
+           * -
+           */
           fCosThetaHelicityFrameTwentyfiveBinsH->Fill( CosThetaHelicityFrameValue10 );
           fPhiHelicityFrameTwentyfiveBinsH     ->Fill( PhiHelicityFrameValue10 );
           if( CosThetaHelicityFrameValue10 > 0 ){
@@ -2021,7 +2241,178 @@ void AliAnalysisTaskUPCforwardMC::UserExec(Option_t *)
           } else {
             fTildePhiHelicityFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosTheta );
           }
+
+          /* - COLLINS-SOPER ANALYSIS
+           * -
+           */
+          fCosThetaCsFrameTwentyfiveBinsH->Fill( CosThetaCollinsSoperValue );
+          fPhiCsFrameTwentyfiveBinsH     ->Fill( PhiCollinsSoperValue );
+          if( CosThetaCollinsSoperValue > 0 ){
+            fTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiPositiveCosThetaCS );
+          } else {
+            fTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosThetaCS );
+          }
+
     }
+
+
+    /* - 2D ANALYSIS for POLARISATION.
+     * - Comparing HELICITY frame with
+     * - COLLINS-SOPER.
+     * - Using a really rough binning
+     * - to compensate the lack of statistics.
+     * -
+     */
+    Bool_t controlFlag4    = 0;
+    Bool_t controlFlag4_CS = 0;
+    Double_t MyVariableCosThetaBinning[] = { -0.65, -0.35, -0.15, -0.05,
+                                              0.05,  0.15,  0.35,  0.65 };
+    Double_t MyVariablePhiBinning[] = { -3.14*1,       -3.14*19*0.05, -3.14*18*0.05, -3.14*17*0.05,
+                                        -3.14*13*0.05, -3.14*9*0.05,  -3.14*6*0.05,  -3.14*4*0.05,
+                                        -3.14*2*0.05,  -3.14*1*0.05,   0,            +3.14*1*0.05,
+                                        +3.14*2*0.05,  +3.14*4*0.05,  +3.14*6*0.05,  +3.14*9*0.05,
+                                        +3.14*13*0.05, +3.14*17*0.05, +3.14*18*0.05, +3.14*19*0.05,
+                                        +3.14*1 };
+    if ( possibleJPsiCopy.Pt() < 0.25 ) {
+          Double_t CosThetaHelicityFrameValue3 = CosThetaHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t PhiHelicityFrameValue3      =   CosPhiHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t CosThetaCollinsSoperValue   =  CosThetaCollinsSoper( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t PhiCollinsSoperValue        =    CosPhiCollinsSoper( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          for(Int_t iCosThetaBins = 0; iCosThetaBins < 7; iCosThetaBins++) {
+            if( controlFlag4 == 1) break;
+            if( CosThetaHelicityFrameValue3 < MyVariableCosThetaBinning[iCosThetaBins + 1] ){
+              for(Int_t iPhiBins = 0; iPhiBins < 20; iPhiBins++) {
+                if( controlFlag4 == 1) break;
+                if( PhiHelicityFrameValue3  < MyVariablePhiBinning[iPhiBins + 1] ){
+                    fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH[iCosThetaBins][iPhiBins]->Fill(possibleJPsiCopy.Mag());
+                    controlFlag4 = 1;
+                }
+              }
+            }
+          }
+          for(Int_t iCosThetaBins = 0; iCosThetaBins < 7; iCosThetaBins++) {
+            if( controlFlag4_CS == 1) break;
+            if( CosThetaCollinsSoperValue < MyVariableCosThetaBinning[iCosThetaBins + 1] ){
+              for(Int_t iPhiBins = 0; iPhiBins < 20; iPhiBins++) {
+                if( controlFlag4_CS == 1) break;
+                if( PhiCollinsSoperValue  < MyVariablePhiBinning[iPhiBins + 1] ){
+                    fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH[iCosThetaBins][iPhiBins]->Fill(possibleJPsiCopy.Mag());
+                    controlFlag4_CS = 1;
+                }
+              }
+            }
+          }
+    }
+
+
+    /* - NEW:
+     * - TEMPLATES needed for signal extraction.
+     * -
+     */
+    Bool_t controlFlag13 = 0;
+    Bool_t controlFlag14 = 0;
+    Bool_t controlFlag15 = 0;
+    Bool_t controlFlag16 = 0;
+    Bool_t controlFlag17 = 0;
+    Bool_t controlFlag18 = 0;
+    if ( possibleJPsiCopy.Pt() < 0.25 ) {
+          Double_t CosThetaHelicityFrameValue7 = CosThetaHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t PhiHelicityFrameValue7      =   CosPhiHelicityFrame( muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          // Double_t TildePhiPositiveCosTheta    = CosThetaHelicityFrameValue7 - 0.25 * TMath::Pi();
+          // Double_t TildePhiNegativeCosTheta    = CosThetaHelicityFrameValue7 - 0.75 * TMath::Pi();
+          Double_t TildePhiPositiveCosTheta    = PhiHelicityFrameValue7 - 0.25 * 3.14;
+          Double_t TildePhiNegativeCosTheta    = PhiHelicityFrameValue7 - 0.75 * 3.14;
+
+          Double_t CosThetaCollinsSoperValue   = CosThetaCollinsSoper(  muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t PhiCollinsSoperValue        =   CosPhiCollinsSoper(  muonsCopy2[0], muonsCopy2[1], possibleJPsiCopy );
+          Double_t TildePhiPositiveCosThetaCS  = PhiCollinsSoperValue - 0.25 * 3.14;
+          Double_t TildePhiNegativeCosThetaCS  = PhiCollinsSoperValue - 0.75 * 3.14;
+
+          if( TildePhiPositiveCosTheta < 0. ) {
+            TildePhiPositiveCosTheta += 2. * TMath::Pi();
+          }
+          if( TildePhiNegativeCosTheta < 0. ) {
+            TildePhiNegativeCosTheta += 2. * TMath::Pi();
+          }
+
+          if( TildePhiPositiveCosThetaCS < 0. ) {
+            TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+          }
+          if( TildePhiNegativeCosThetaCS < 0. ) {
+            TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+          }
+
+          /* - HELICITY FRAME ANALYSIS
+           * -
+           */
+          for(Int_t iCosThetaBins = 0; iCosThetaBins < 25; iCosThetaBins++) {
+            if( controlFlag13 == 1) break;
+            if( (CosThetaHelicityFrameValue7 + 1.) < 2.*((Double_t)iCosThetaBins + 1.)/25. ) {
+              fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH[iCosThetaBins]->Fill(possibleJPsiCopy.Mag());
+              controlFlag13 = 1;
+            }
+          }
+          for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++) {
+            if( controlFlag14 == 1) break;
+            if( (PhiHelicityFrameValue7 + 3.14) < 6.28*((Double_t)iPhiBins + 1.)/25. ){
+              fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH[iPhiBins]->Fill(possibleJPsiCopy.Mag());
+              controlFlag14 = 1;
+            }
+          }
+          if( (CosThetaHelicityFrameValue7 > 0) || (CosThetaHelicityFrameValue7 == 0) ){
+            for(Int_t iTildePhiBins = 0; iTildePhiBins < 25; iTildePhiBins++) {
+              if( controlFlag15 == 1) break;
+              if( (TildePhiPositiveCosTheta) < 6.28*((Double_t)iTildePhiBins + 1.)/25. ){
+                fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH[iTildePhiBins]->Fill(possibleJPsiCopy.Mag());
+                controlFlag15 = 1;
+              }
+            }
+          } else if ( CosThetaHelicityFrameValue7 < 0 ){
+            for(Int_t iTildePhiBins = 0; iTildePhiBins < 25; iTildePhiBins++) {
+              if( controlFlag15 == 1) break;
+              if( (TildePhiNegativeCosTheta) < 6.28*((Double_t)iTildePhiBins + 1.)/25. ){
+                fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH[iTildePhiBins]->Fill(possibleJPsiCopy.Mag());
+                controlFlag15 = 1;
+              }
+            }
+          }
+
+          /* - COLLINS SOPER ANALYSIS
+           * -
+           */
+          for(Int_t iCosThetaBins = 0; iCosThetaBins < 25; iCosThetaBins++) {
+            if( controlFlag16 == 1) break;
+            if( (CosThetaCollinsSoperValue + 1.) < 2.*((Double_t)iCosThetaBins + 1.)/25. ) {
+              fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH[iCosThetaBins]->Fill(possibleJPsiCopy.Mag());
+              controlFlag16 = 1;
+            }
+          }
+          for(Int_t iPhiBins = 0; iPhiBins < 25; iPhiBins++) {
+            if( controlFlag17 == 1) break;
+            if( (PhiCollinsSoperValue + 3.14) < 6.28*((Double_t)iPhiBins + 1.)/25. ){
+              fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH[iPhiBins]->Fill(possibleJPsiCopy.Mag());
+              controlFlag17 = 1;
+            }
+          }
+          if( (CosThetaCollinsSoperValue > 0) || (CosThetaCollinsSoperValue == 0) ){
+            for(Int_t iTildePhiBins = 0; iTildePhiBins < 25; iTildePhiBins++) {
+              if( controlFlag18 == 1) break;
+              if( (TildePhiPositiveCosThetaCS) < 6.28*((Double_t)iTildePhiBins + 1.)/25. ){
+                fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH[iTildePhiBins]->Fill(possibleJPsiCopy.Mag());
+                controlFlag18 = 1;
+              }
+            }
+          } else if ( CosThetaCollinsSoperValue < 0 ){
+            for(Int_t iTildePhiBins = 0; iTildePhiBins < 25; iTildePhiBins++) {
+              if( controlFlag18 == 1) break;
+              if( (TildePhiNegativeCosThetaCS) < 6.28*((Double_t)iTildePhiBins + 1.)/25. ){
+                fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH[iTildePhiBins]->Fill(possibleJPsiCopy.Mag());
+                controlFlag18 = 1;
+              }
+            }
+          }
+    }
+
 
     /* - NEW:
      * - 1D analysis with
@@ -2360,6 +2751,9 @@ void AliAnalysisTaskUPCforwardMC::ProcessMCParticles(AliMCEvent* fMCEventArg)
                                                                                    possibleJPsiMC
                                                                                    )
                                                                                   );
+                  /* - HELICITY FRAME ANALYSIS
+                   * -
+                   */
                   fMCCosThetaHelicityFrameTwentyfiveBinsH->Fill( CosThetaHelicityFrame( muonsMCcopy[0],
                                                                                         muonsMCcopy[1],
                                                                                         possibleJPsiMC
@@ -2393,6 +2787,44 @@ void AliAnalysisTaskUPCforwardMC::ProcessMCParticles(AliMCEvent* fMCEventArg)
                     }
                     fMCTildePhiHelicityFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosTheta );
                   }
+
+                  /* - COLLINS-SOPER ANALYSIS
+                   * -
+                   */
+                  fMCCosThetaCsFrameTwentyfiveBinsH->Fill( CosThetaCollinsSoper( muonsMCcopy[0],
+                                                                                 muonsMCcopy[1],
+                                                                                 possibleJPsiMC
+                                                                                 )
+                                                                                );
+                  fMCPhiCsFrameTwentyfiveBinsH->Fill( CosPhiCollinsSoper( muonsMCcopy[0],
+                                                                          muonsMCcopy[1],
+                                                                          possibleJPsiMC
+                                                                          )
+                                                                         );
+                  if( CosThetaCollinsSoper(muonsMCcopy[0],muonsMCcopy[1],possibleJPsiMC) > 0 ){
+                    Double_t PhiCsFrameValueTruth          = CosPhiCollinsSoper( muonsMCcopy[0],muonsMCcopy[1],possibleJPsiMC );
+                    Double_t TildePhiPositiveCosThetaCS    = PhiCsFrameValueTruth - 0.25 * 3.14;
+                    Double_t TildePhiNegativeCosThetaCS    = PhiCsFrameValueTruth - 0.75 * 3.14;
+                    if( TildePhiPositiveCosThetaCS < 0. ) {
+                      TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+                    }
+                    if( TildePhiNegativeCosThetaCS < 0. ) {
+                      TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+                    }
+                    fMCTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiPositiveCosThetaCS );
+                  } else {
+                    Double_t PhiCsFrameValueTruth  = CosPhiCollinsSoper( muonsMCcopy[0],muonsMCcopy[1],possibleJPsiMC );
+                    Double_t TildePhiPositiveCosThetaCS    = PhiCsFrameValueTruth - 0.25 * 3.14;
+                    Double_t TildePhiNegativeCosThetaCS    = PhiCsFrameValueTruth - 0.75 * 3.14;
+                    if( TildePhiPositiveCosThetaCS < 0. ) {
+                      TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+                    }
+                    if( TildePhiNegativeCosThetaCS < 0. ) {
+                      TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+                    }
+                    fMCTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosThetaCS );
+                  }
+                  //_______________________________
                   fMCCosThetaHelicityFrameMyBinningSmallH->Fill( CosThetaHelicityFrame(  muonsMCcopy[0],
                                                                                          muonsMCcopy[1],
                                                                                          possibleJPsiMC
@@ -2566,13 +2998,16 @@ void AliAnalysisTaskUPCforwardMC::ProcessMCParticles(AliMCEvent* fMCEventArg)
                                                                                    possibleJPsiMC
                                                                                    )
                                                                                   );
-                  fMCCosThetaHelicityFrameTwentyfiveBinsH->Fill( CosThetaHelicityFrame( muonsMCcopy[0],
-                                                                                        muonsMCcopy[1],
+                  /* - HELICITY FRAME ANALYSIS
+                   * -
+                   */
+                  fMCCosThetaHelicityFrameTwentyfiveBinsH->Fill( CosThetaHelicityFrame( muonsMCcopy[1],
+                                                                                        muonsMCcopy[0],
                                                                                         possibleJPsiMC
                                                                                         )
                                                                                        );
-                  fMCPhiHelicityFrameTwentyfiveBinsH->Fill( CosPhiHelicityFrame( muonsMCcopy[0],
-                                                                                 muonsMCcopy[1],
+                  fMCPhiHelicityFrameTwentyfiveBinsH->Fill( CosPhiHelicityFrame( muonsMCcopy[1],
+                                                                                 muonsMCcopy[0],
                                                                                  possibleJPsiMC
                                                                                  )
                                                                                 );
@@ -2599,6 +3034,44 @@ void AliAnalysisTaskUPCforwardMC::ProcessMCParticles(AliMCEvent* fMCEventArg)
                     }
                     fMCTildePhiHelicityFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosTheta );
                   }
+
+                  /* - COLLINS-SOPER ANALYSIS
+                   * -
+                   */
+                  fMCCosThetaCsFrameTwentyfiveBinsH->Fill( CosThetaCollinsSoper( muonsMCcopy[1],
+                                                                                 muonsMCcopy[0],
+                                                                                 possibleJPsiMC
+                                                                                 )
+                                                                                );
+                  fMCPhiCsFrameTwentyfiveBinsH->Fill( CosPhiCollinsSoper( muonsMCcopy[1],
+                                                                          muonsMCcopy[0],
+                                                                          possibleJPsiMC
+                                                                          )
+                                                                         );
+                  if( CosThetaCollinsSoper(muonsMCcopy[1],muonsMCcopy[0],possibleJPsiMC) > 0 ){
+                      Double_t PhiCsFrameValueTruth          = CosPhiCollinsSoper( muonsMCcopy[1],muonsMCcopy[0],possibleJPsiMC );
+                      Double_t TildePhiPositiveCosThetaCS    = PhiCsFrameValueTruth - 0.25 * 3.14;
+                      Double_t TildePhiNegativeCosThetaCS    = PhiCsFrameValueTruth - 0.75 * 3.14;
+                      if( TildePhiPositiveCosThetaCS < 0. ) {
+                        TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+                      }
+                      if( TildePhiNegativeCosThetaCS < 0. ) {
+                        TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+                      }
+                      fMCTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiPositiveCosThetaCS );
+                  } else {
+                      Double_t PhiCsFrameValueTruth  = CosPhiCollinsSoper( muonsMCcopy[1],muonsMCcopy[0],possibleJPsiMC );
+                      Double_t TildePhiPositiveCosThetaCS    = PhiCsFrameValueTruth - 0.25 * 3.14;
+                      Double_t TildePhiNegativeCosThetaCS    = PhiCsFrameValueTruth - 0.75 * 3.14;
+                      if( TildePhiPositiveCosThetaCS < 0. ) {
+                        TildePhiPositiveCosThetaCS += 2. * TMath::Pi();
+                      }
+                      if( TildePhiNegativeCosThetaCS < 0. ) {
+                        TildePhiNegativeCosThetaCS += 2. * TMath::Pi();
+                      }
+                      fMCTildePhiCsFrameTwentyfiveBinsH->Fill( TildePhiNegativeCosThetaCS );
+                  }
+                  //_______________________________
                   fMCCosThetaHelicityFrameMyBinningSmallH->Fill( CosThetaHelicityFrame(  muonsMCcopy[1],
                                                                                          muonsMCcopy[0],
                                                                                          possibleJPsiMC

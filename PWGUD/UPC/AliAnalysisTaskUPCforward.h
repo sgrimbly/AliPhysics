@@ -1414,8 +1414,12 @@ class AliAnalysisTaskUPCforward : public AliAnalysisTaskSE
                                  * -0.05, 0.05, 0.15, 0.35, 0.65] vs
                                  * 3.14*[1, 19/20, 18/20, 17/20, 13/20, 9/20,
                                  * 6/20, 4/20, 2/20, 1/10, 0, negative side].
+                                 *
+                                 * NOTE: the first is in the helicity frame,
+                                 *       the second with Collins-Soper.
                                  */
         TH1F***                 fInvariantMassDistributionForSignalExtractionHelicityFrameMyBinningH;  //!
+        TH1F***                 fInvariantMassDistributionForSignalExtractionCsFrameMyBinningH;        //!
 
                                 /**
                                  * This histogram shows the invariant mass
@@ -1487,10 +1491,15 @@ class AliAnalysisTaskUPCforward : public AliAnalysisTaskSE
                                  * Signal extraction in Phi, CosTheta, and
                                  * TildePhi, with 25 bins only...
                                  *
+                                 * NB: He => helicity frame
+                                 * NB: Cs => CS       frame
                                  */
-        TH1F*                   fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH[25];  //!
+        TH1F*                   fInvariantMassDistributionOnlyPhiHeFrameTwentyfiveBinsH[25];       //!
         TH1F*                   fInvariantMassDistributionOnlyCosThetaHeFrameTwentyfiveBinsH[25];  //!
         TH1F*                   fInvariantMassDistributionOnlyTildePhiHeFrameTwentyfiveBinsH[25];  //!
+        TH1F*                   fInvariantMassDistributionOnlyPhiCsFrameTwentyfiveBinsH[25];       //!
+        TH1F*                   fInvariantMassDistributionOnlyCosThetaCsFrameTwentyfiveBinsH[25];  //!
+        TH1F*                   fInvariantMassDistributionOnlyTildePhiCsFrameTwentyfiveBinsH[25];  //!
 
         //_______________________________
         // CUTS
@@ -1552,7 +1561,7 @@ class AliAnalysisTaskUPCforward : public AliAnalysisTaskSE
          * If I happen to encounter it again in the future, I will make sure to
          * record it!
          */
-        ClassDef(AliAnalysisTaskUPCforward, 40);
+        ClassDef(AliAnalysisTaskUPCforward, 42);
 };
 
 #endif

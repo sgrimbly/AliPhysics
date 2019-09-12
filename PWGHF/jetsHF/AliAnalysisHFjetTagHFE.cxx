@@ -229,7 +229,8 @@ AliAnalysisHFjetTagHFE::AliAnalysisHFjetTagHFE() :
   fMCparticleMother(0),
   iMCcorr(kTRUE),
   iDCApTweight(kTRUE),
-  iMCEtaFull(kFALSE)
+  iMCEtaFull(kFALSE),
+  fPtHardMax(0.0)
   //fmcData(kFALSE)
 {
   // Default constructor.
@@ -420,7 +421,8 @@ AliAnalysisHFjetTagHFE::AliAnalysisHFjetTagHFE(const char *name) :
   fMCparticleMother(0),
   iMCcorr(kTRUE),
   iDCApTweight(kTRUE),
-  iMCEtaFull(kFALSE)
+  iMCEtaFull(kFALSE),
+  fPtHardMax(0.0)
   //fmcData(kFALSE)
 {
   // Standard constructor.
@@ -1243,9 +1245,12 @@ Bool_t AliAnalysisHFjetTagHFE::Run()
      if(fmcData)
        {
         MakeParticleLevelJet(pthard);
+        pthard += fPtHardMax;
        }
      if(idbHFEj)cout << "check fmcData ..." << endl;
 
+     
+   
 
   /////////////////////////////
   //EMCAL cluster information//
@@ -1581,7 +1586,7 @@ Bool_t AliAnalysisHFjetTagHFE::Run()
             //EMCAL EID info
             Double_t eop = -1.0;
             if(track->P()>0)eop = clustMatchE/track->P();
-            if(fmcData && iMCcorr)eop += 0.04; // mean shift correction between data and MC (pPb at 5 in 2016) 
+            //if(fmcData && iMCcorr)eop += 0.04; // mean shift correction between data and MC (pPb at 5 in 2016) 
             if(idbHFEj)cout << "++++++++++ eop = " << eop << " ; " << pt  << endl;
             eopJet = eop;
             if(pt>2.0)fHistEopNsig->Fill(fTPCnSigma,eop);

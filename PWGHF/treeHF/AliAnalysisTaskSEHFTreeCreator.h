@@ -64,6 +64,7 @@ class AliAODEvent;
 class TClonesArray;
 class AliEmcalJet;
 class AliRhoParameter;
+class AliCDBEntry;
 
 class AliAnalysisTaskSEHFTreeCreator : public AliAnalysisTaskSE
 {
@@ -174,7 +175,7 @@ public:
     void ProcessLb(TClonesArray *array3Prong, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield, AliAODMCHeader *mcHeader);
     void ProcessMCGen(TClonesArray *mcarray);
   
-    Bool_t CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau);
+    Bool_t CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau, Bool_t ITSUpgradeStudy);
     Bool_t IsCandidateFromHijing(AliAODRecoDecayHF *cand, AliAODMCHeader *mcHeader, TClonesArray* arrMC, AliAODTrack *tr = 0x0);
     
     void SelectGoodTrackForReconstruction(AliAODEvent *aod, Int_t trkEntries, Int_t &nSeleTrks,Bool_t *seleFlags);
@@ -184,7 +185,15 @@ public:
         fEnableNsigmaTPCDataCorr=true; 
         fSystemForNsigmaTPCDataCorr=syst; 
     }
-  
+
+    void ApplyPhysicsSelectionOnline(bool apply=true) { fApplyPhysicsSelOnline = apply; }
+
+    void EnableEventDownsampling(float fractokeep, unsigned long seed) {
+        fEnableEventDownsampling = true;
+        fFracToKeepEventDownsampling = fractokeep;
+        fSeedEventDownsampling = seed;
+    }
+
     // Particles (tracks or MC particles)
     //-----------------------------------------------------------------------------------------------
     void                        SetFillParticleTree(Bool_t b) {fFillParticleTree = b;}
@@ -326,6 +335,7 @@ private:
     Int_t                   fNtracks;                              /// number of tracks
     Int_t                   fIsEvRej;                              /// flag with information about rejection of the event
     Int_t                   fRunNumber;                            /// run number
+    Int_t                   fRunNumberCDB;                         /// run number (for OCDB)
     UInt_t                  fEventID;                              /// event ID (unique when combined with run number)
     TString                 fFileName;
     unsigned int            fDirNumber;
@@ -354,6 +364,7 @@ private:
     Int_t                   fnV0MCorr;                             /// V0M multiplicity (corrected)
     Int_t                   fnV0MEqCorr;                           /// V0M multiplicity (equalized + corrected)
     Float_t                 fPercV0M;                              /// V0M multiplicity percentile
+    Float_t                 fMultV0M;                              /// V0M multiplicity from mult selection task
 
     Bool_t                  fFillMCGenTrees;                       /// flag to enable fill of the generated trees
   
@@ -437,8 +448,15 @@ private:
     bool fCorrNtrVtx;
     bool fCorrV0MVtx;
 
+    bool fApplyPhysicsSelOnline;                                   /// flag to apply physics selection in the task
+    bool fEnableEventDownsampling;                                 /// flag to apply event downsampling
+    float fFracToKeepEventDownsampling;                            /// fraction of events to be kept by event downsampling
+    unsigned long fSeedEventDownsampling;                          /// seed for event downsampling
+
+    AliCDBEntry *fCdbEntry;
+
     /// \cond CLASSIMP
-    ClassDef(AliAnalysisTaskSEHFTreeCreator,19);
+    ClassDef(AliAnalysisTaskSEHFTreeCreator,21);
     /// \endcond
 };
 

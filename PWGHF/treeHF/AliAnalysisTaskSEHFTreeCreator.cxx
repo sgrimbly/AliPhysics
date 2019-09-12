@@ -45,6 +45,7 @@
 #include <TH2F.h>
 #include <TDatabasePDG.h>
 #include <THnSparse.h>
+#include <TRandom3.h>
 #include <AliAnalysisDataSlot.h>
 #include <AliAnalysisDataContainer.h>
 #include "TChain.h"
@@ -86,6 +87,11 @@
 #include "AliAODPidHF.h"
 #include "AliESDUtils.h"
 #include "AliMultSelection.h"
+
+#include "AliCDBManager.h"
+#include "AliCDBEntry.h"
+#include "AliTriggerConfiguration.h"
+#include "AliTriggerInput.h"
 
 using std::cout;
 using std::endl;
@@ -201,6 +207,7 @@ fNcontributors(0),
 fNtracks(0),
 fIsEvRej(0),
 fRunNumber(0),
+fRunNumberCDB(0),
 fEventID(0),
 fFileName(""),
 fDirNumber(0),
@@ -276,7 +283,12 @@ fDoJetSubstructure(false),
 fEnableNsigmaTPCDataCorr(false),
 fSystemForNsigmaTPCDataCorr(AliAODPidHF::kNone),
 fCorrNtrVtx(false),
-fCorrV0MVtx(false)
+fCorrV0MVtx(false),
+fApplyPhysicsSelOnline(false),
+fEnableEventDownsampling(false),
+fFracToKeepEventDownsampling(1.1),
+fSeedEventDownsampling(0),
+fCdbEntry(nullptr)
 {
   fParticleCollArray.SetOwner(kTRUE);
   fJetCollArray.SetOwner(kTRUE);
@@ -589,6 +601,7 @@ void AliAnalysisTaskSEHFTreeCreator::UserCreateOutputObjects()
   fTreeEvChar->Branch("mult_gen_v0a", &fMultGenV0A);
   fTreeEvChar->Branch("mult_gen_v0c", &fMultGenV0C);
   fTreeEvChar->Branch("perc_v0m", &fPercV0M);
+  fTreeEvChar->Branch("mult_v0m", &fMultV0M);
   fTreeEvChar->SetMaxVirtualSize(1.e+8/nEnabledTrees);
   
   if(fWriteVariableTreeD0){
@@ -1066,6 +1079,12 @@ void AliAnalysisTaskSEHFTreeCreator::UserExec(Option_t */*option*/)
 {
   /// Execute analysis for current event:
   
+  if(fEnableEventDownsampling) {
+        gRandom->SetSeed(fSeedEventDownsampling);
+        if(gRandom->Rndm() > fFracToKeepEventDownsampling)
+            return;
+  }
+
   AliAODEvent *aod = dynamic_cast<AliAODEvent*> (InputEvent());
   
   fNentries->Fill(0); // all events
@@ -1230,8 +1249,9 @@ void AliAnalysisTaskSEHFTreeCreator::UserExec(Option_t */*option*/)
   
   fCentrality = fEvSelectionCuts->GetCentrality(aod);
   if(fCentrality<0) fCentrality=-1.;
+  bool isEvRejPhysSel = fEvSelectionCuts->IsEventRejectedDuePhysicsSelection();
   //normalisation counter
-  if(!fEvSelectionCuts->IsEventRejectedDuePhysicsSelection()){
+  if(!isEvRejPhysSel){
     if(isEvSel){
       //selected events with primary vertex
       fHistoNormCounter->Fill(0.,fCentrality);
@@ -1258,11 +1278,11 @@ void AliAnalysisTaskSEHFTreeCreator::UserExec(Option_t */*option*/)
       fHistoNormCounter->Fill(3.,fCentrality);
     }
   }
-  
+
   Bool_t isEvRejCent  = fEvSelectionCuts->IsEventRejectedDueToCentrality();
   
-  if(!isEvSel && isEvRejCent){
-    return; //cut only centrality, else tag only
+  if(!isEvSel && (isEvRejCent || (fApplyPhysicsSelOnline && isEvRejPhysSel))){
+    return; //cut only centrality and physics selection if enabled, else tag only
   }
   if(isEvSel) fNentries->Fill(4);
   // AOD primary vertex
@@ -1309,7 +1329,10 @@ void AliAnalysisTaskSEHFTreeCreator::UserExec(Option_t */*option*/)
   // multiplicity percentiles
   const auto multSel = static_cast<AliMultSelection*>(aod->FindListObject("MultSelection"));
   fPercV0M = multSel ? multSel->GetMultiplicityPercentile("V0M") : -1.;
-  
+  // multiplicity from mult selection task
+  const auto multEst = multSel ? multSel->GetEstimator("V0M") : nullptr;
+  fMultV0M = multEst ? multEst->GetValue() : -1.;
+
   // generated multiplicity
   fMultGen = -1;
   fMultGenV0A = -1;
@@ -1333,10 +1356,26 @@ void AliAnalysisTaskSEHFTreeCreator::UserExec(Option_t */*option*/)
   fTriggerClassHighMultSPD = fTriggerClasses.Contains("CVHMSH2-B");
   fTriggerClassHighMultV0m = fTriggerClasses.Contains("CVHMV0M-B");
   
+  // bits for CTP inputs
+  if (fRunNumberCDB != fRunNumber) {
+    fCdbEntry = AliCDBManager::Instance()->Get("GRP/CTP/Config", fRunNumber);
+    fRunNumberCDB = fRunNumber;
+  }
+
+  AliTriggerConfiguration *trgCfg = fCdbEntry ? static_cast<AliTriggerConfiguration*>(fCdbEntry->GetObject()) : nullptr;
+  TObjArray inputs;
+  if (trgCfg)
+    inputs = trgCfg->GetInputs();
+  const auto inputSHM = trgCfg ? static_cast<AliTriggerInput*>(inputs.FindObject("0SHM")) : nullptr;
+  const auto inputV0M = trgCfg ? static_cast<AliTriggerInput*>(inputs.FindObject("0VHM")) : nullptr;
+  const auto inputV0A = trgCfg ? static_cast<AliTriggerInput*>(inputs.FindObject("0V0A")) : nullptr;
+  const auto inputV0C = trgCfg ? static_cast<AliTriggerInput*>(inputs.FindObject("0V0C")) : nullptr;
   const auto triggerBits = aod->GetHeader()->GetL0TriggerInputs();
-  fTriggerOnlineINT7 = (triggerBits & (1  << 6) != 0) && (triggerBits & 1 << 5);
-  fTriggerOnlineHighMultSPD = (triggerBits & (1  << 7) != 0);
-  fTriggerOnlineHighMultV0 = (triggerBits & (1  << 9) != 0);
+  fTriggerOnlineHighMultSPD = inputSHM ? TESTBIT(triggerBits, inputSHM->GetIndexCTP() - 1) : -1;
+  fTriggerOnlineHighMultV0 = inputV0M ? TESTBIT(triggerBits, inputV0M->GetIndexCTP() - 1) : -1;
+  fTriggerOnlineINT7 = (inputV0C && inputV0A) ?
+                       (TESTBIT(triggerBits, inputV0C->GetIndexCTP() - 1) &&
+                        TESTBIT(triggerBits, inputV0A->GetIndexCTP() - 1)) : -1;
 
   fTreeEvChar->Fill();
   
@@ -3286,7 +3325,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       if(absPDG == 411 && fWriteVariableTreeDplus) {
         deca = AliVertexingHFUtils::CheckDplusDecay(arrayMC,mcPart,labDau);
         if(deca<1 || labDau[0]<0 || labDau[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau);
+        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau,kFALSE);
         fTreeHandlerGenDplus->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenDplus->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenDplus->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3296,7 +3335,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       else if(absPDG == 421 && fWriteVariableTreeD0) {
         deca = AliVertexingHFUtils::CheckD0Decay(arrayMC,mcPart,labDau);
         if(deca!=1 || labDau[0]<0 || labDau[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,2,labDau);
+        isDaugInAcc = CheckDaugAcc(arrayMC,2,labDau,kFALSE);
         fTreeHandlerGenD0->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenD0->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenD0->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3306,7 +3345,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       else if(absPDG == 431 && fWriteVariableTreeDs) {
         deca = AliVertexingHFUtils::CheckDsDecay(arrayMC,mcPart,labDau);
         if(deca!=fWriteVariableTreeDs || labDau[0]<0 || labDau[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau);
+        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau,kFALSE);
         fTreeHandlerGenDs->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenDs->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenDs->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3316,7 +3355,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       else if(absPDG == 521 && fWriteVariableTreeBplus) {
         deca = AliVertexingHFUtils::CheckBplusDecay(arrayMC,mcPart,labDau);
         if(deca!=1 || labDau[0]==-1 || labDau[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau);
+        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau,kTRUE);
         fTreeHandlerGenBplus->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenBplus->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenBplus->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3327,7 +3366,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
         deca = AliVertexingHFUtils::CheckBsDecay(arrayMC,mcPart,labDau4pr);
         //Only accept Bs-> pi Ds(->phipi->KKpi) decays
         if(deca!=1 || labDau4pr[0]==-1 || labDau4pr[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,4,labDau4pr);
+        isDaugInAcc = CheckDaugAcc(arrayMC,4,labDau4pr,kTRUE);
         fTreeHandlerGenBs->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenBs->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenBs->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3337,7 +3376,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       else if(absPDG == 413 && fWriteVariableTreeDstar) {
         deca = AliVertexingHFUtils::CheckDstarDecay(arrayMC,mcPart,labDau);
         if(deca!=1 || labDau[0]<0 || labDau[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau);
+        isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau,kFALSE);
         fTreeHandlerGenDstar->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenDstar->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenDstar->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3349,14 +3388,14 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
         deca2 = AliVertexingHFUtils::CheckLcV0bachelorDecay(arrayMC,mcPart,labDau2);
         if(deca<1 || labDau[0]==-1 || labDau[1]<0){
           if(deca2!=1 || labDau2[0]<0 || labDau2[1]<0 || !fWriteVariableTreeLc2V0bachelor) continue;
-          isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau2);
+          isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau2,kFALSE);
           fTreeHandlerGenLc2V0bachelor->SetDauInAcceptance(isDaugInAcc);
           fTreeHandlerGenLc2V0bachelor->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
           fTreeHandlerGenLc2V0bachelor->SetMCGenVariables(fRunNumber,fEventID, mcPart);
           if(fFillJets) fTreeHandlerGenLc2V0bachelor->SetGenJetVars(arrayMC,mcPart);
           fTreeHandlerGenLc2V0bachelor->FillTree();
         } else if(fWriteVariableTreeLctopKpi) {
-          isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau);
+          isDaugInAcc = CheckDaugAcc(arrayMC,3,labDau,kFALSE);
           fTreeHandlerGenLctopKpi->SetDauInAcceptance(isDaugInAcc);
           fTreeHandlerGenLctopKpi->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
           fTreeHandlerGenLctopKpi->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3368,7 +3407,7 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
       } else if(absPDG == 5122 && fWriteVariableTreeLb) {
         deca = AliVertexingHFUtils::CheckLbDecay(arrayMC,mcPart,labDau4pr);
         if(deca<1 || labDau4pr[0]==-1 || labDau4pr[1]<0) continue;
-        isDaugInAcc = CheckDaugAcc(arrayMC,4,labDau4pr);
+        isDaugInAcc = CheckDaugAcc(arrayMC,4,labDau4pr,kTRUE);
         fTreeHandlerGenLb->SetDauInAcceptance(isDaugInAcc);
         fTreeHandlerGenLb->SetCandidateType(kTRUE,kFALSE,isPrimary,isFeeddown,kFALSE);
         fTreeHandlerGenLb->SetMCGenVariables(fRunNumber,fEventID, mcPart);
@@ -3380,18 +3419,20 @@ void AliAnalysisTaskSEHFTreeCreator::ProcessMCGen(TClonesArray *arrayMC){
 }
 
 //--------------------------------------------------------
-Bool_t AliAnalysisTaskSEHFTreeCreator::CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau){
+Bool_t AliAnalysisTaskSEHFTreeCreator::CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau, Bool_t ITSUpgradeStudy){
   /// check if the decay products are in the good eta and pt range
-  
+    
   for (Int_t iProng = 0; iProng<nProng; iProng++){
     AliAODMCParticle* mcPartDaughter=dynamic_cast<AliAODMCParticle*>(arrayMC->At(labDau[iProng]));
     if(!mcPartDaughter) {
       return kFALSE;
     }
     Double_t eta = mcPartDaughter->Eta();
-    Double_t pt = mcPartDaughter->Pt();
-    if (TMath::Abs(eta) > 0.9 || pt < 0.1) {
-      return kFALSE;
+    if(ITSUpgradeStudy){
+      if (TMath::Abs(eta) >= 1) return kFALSE;
+    } else {
+      Double_t pt = mcPartDaughter->Pt();
+      if (TMath::Abs(eta) > 0.9 || pt < 0.1) return kFALSE;
     }
   }
   return kTRUE;
