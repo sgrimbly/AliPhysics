@@ -38,6 +38,7 @@ void AddTask_GammaConvNeutralMesonPiPlPiMiNeutralMeson_MixedMode_pp(
     Double_t  tolerance                   = -1,
     TString   periodNameV0Reader          = "",                       // period Name for V0Reader
     Int_t     runLightOutput              = 0,                        // run light output option 0: no light output 1: most cut histos stiched off 2: unecessary omega hists turned off as well
+    Int_t     prefilterRunFlag            = 1500,                     // flag to change the prefiltering of ESD tracks. See SetHybridTrackCutsAODFiltering() in AliPrimaryPionCuts
     TString   additionalTrainConfig       = "0"                       // additional counter for trainconfig, this has to be always the last parameter
   ) {
 
@@ -103,6 +104,7 @@ AliVEventHandler *inputHandler=mgr->GetInputEventHandler();
     AliPrimaryPionCuts *fPionCuts=0;
     if( PionCuts!=""){
       fPionCuts= new AliPrimaryPionCuts(PionCuts.Data(),PionCuts.Data());
+      fPionCuts->SetPrefilterRunFlag(prefilterRunFlag);
       if(runLightOutput>0) fPionCuts->SetLightOutput(kTRUE);
       fPionCuts->SetPeriodName(periodNameV0Reader);
       if(fPionCuts->InitializeCutsFromCutString(PionCuts.Data())){
@@ -541,29 +543,41 @@ AliVEventHandler *inputHandler=mgr->GetInputEventHandler();
   } else if ( trainConfig == 207 ) { // no event mixing only tiggers
     cuts.AddCutHeavyMesonPCMCalo("0008e113","00200009227000008250400000","411790106f032220000","32c510700","0103603l00000000","0453503000000000"); // EMC7
     cuts.AddCutHeavyMesonPCMCalo("0008d113","00200009227000008250400000","411790106f032220000","32c510700","0103603l00000000","0453503000000000"); // EMC7
-    // PHOS pp 13 TeV
+
+  // PCM-PHOS
+  } else if ( trainConfig == 250 ) { // INT7 + PHI7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","00200009227000008250400000","24466000ga012200000","32c510700","0103603l00000000","0453503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00062113","00200009227000008250400000","24466000ga012200000","32c510700","0103603l00000000","0453503000000000"); // PHI7
+      
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  //                                          OMEGA MESON pp 13 TeV
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  // PHOS pp 13 TeV
   } else if(trainConfig == 400)  { // pp13 TeV AOD and ESD Comparison
-    cuts.AddCutHeavyMesonPCMCalo("00010113","00200009227000008250400000","2444411044012300000","32c51070a","0103603n00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","00200009227000008250400000","2444411044012300000","32c51070a","0103603r00000000","0153503000000000"); // INT7
   } else if(trainConfig == 401)  { // Standard PHOS
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","2446600044012200000","32c51070a","0103603n00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","24466000ga012200000","32c51070a","0103603r00000000","0153503000000000"); // INT7
   } else if(trainConfig == 402)  { //Standard PHOS 13TeV + PHI7
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","2446600044012200000","32c51070a","0103603n00000000","0153503000000000"); // INT7
-    cuts.AddCutHeavyMesonPCMCalo("00062113","0d200009327000008250404000","2446600044012200000","32c51070a","0103603n00000000","0153503000000000"); // PHI7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","24466000ga012200000","32c51070a","0103603r00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00062113","0d200009327000008250404000","24466000ga012200000","32c51070a","0103603r00000000","0153503000000000"); // PHI7
   } else if(trainConfig == 405)  { //Standard EMCal 13TeV
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603p00000000","0153503000000000"); // INT7
   } else if(trainConfig == 406)  { //Standard EMCal 13TeV + Triggers
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
-    cuts.AddCutHeavyMesonPCMCalo("0008e113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603n00000000","0153503000000000"); // PHI7
-    cuts.AddCutHeavyMesonPCMCalo("0008d113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
-    cuts.AddCutHeavyMesonPCMCalo("0009b113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603n00000000","0153503000000000"); // PHI7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603p00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("0008e113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603p00000000","0153503000000000"); // PHI7
+    cuts.AddCutHeavyMesonPCMCalo("0008d113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603p00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("0009b113","0d200009327000008250404000","411791106f032220000","32c51070a","0103603p00000000","0153503000000000"); // PHI7
   } else if(trainConfig == 407)  { //Standard EMCal 13TeV, testbeam nl
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603p00000000","0153503000000000"); // INT7
   } else if(trainConfig == 408)  { //Standard EMCal 13TeV + Triggers, testbeam nl
-    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
-    cuts.AddCutHeavyMesonPCMCalo("0008e113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603n00000000","0153503000000000"); // PHI7
-    cuts.AddCutHeavyMesonPCMCalo("0008d113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603n00000000","0153503000000000"); // INT7
-    cuts.AddCutHeavyMesonPCMCalo("0009b113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603n00000000","0153503000000000"); // PHI7
-    
+    cuts.AddCutHeavyMesonPCMCalo("0008e113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603p00000000","0453503000000000"); // PHI7
+    cuts.AddCutHeavyMesonPCMCalo("0008d113","0d200009327000008250404000","411790106f032220000","32c51070a","0103603p00000000","0453503000000000"); // INT7
+  } else if(trainConfig == 409)  { //Standard EMCal 13TeV, no testbeam nl
+    cuts.AddCutHeavyMesonPCMCalo("00010113","0d200009327000008250404000","411790006f032220000","32c51070a","0103603p00000000","0153503000000000"); // INT7
+    cuts.AddCutHeavyMesonPCMCalo("0008e113","0d200009327000008250404000","411790006f032220000","32c51070a","0103603p00000000","0453503000000000"); // PHI7
+    cuts.AddCutHeavyMesonPCMCalo("0008d113","0d200009327000008250404000","411790006f032220000","32c51070a","0103603p00000000","0453503000000000"); // INT7
   } else {
     Error(Form("GammaConvNeutralMeson_MixedMode_%i",trainConfig), "wrong trainConfig variable no cuts have been specified for the configuration");
     return;
@@ -674,6 +688,7 @@ AliVEventHandler *inputHandler=mgr->GetInputEventHandler();
 
     TString cutName( Form("%s_%s_%s_%s_%s_%s",(cuts.GetEventCut(i)).Data(), (cuts.GetPhotonCut(i)).Data(), (cuts.GetClusterCut(i)).Data(),(cuts.GetPionCut(i)).Data(),(cuts.GetNDMCut(i)).Data(), (cuts.GetMesonCut(i)).Data() ) );
     analysisPionCuts[i] = new AliPrimaryPionCuts();
+    analysisPionCuts[i]->SetPrefilterRunFlag(prefilterRunFlag);
     analysisPionCuts[i]->SetPeriodName(periodNameV0Reader);
     if(runLightOutput>0) analysisPionCuts[i]->SetLightOutput(kTRUE);
 

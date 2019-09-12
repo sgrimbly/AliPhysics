@@ -11,7 +11,9 @@ class TTree;
 class TList;
 class TFile;
 class AliTOFTriggerMask;
+class TBits;
 
+#include "AliTimeRangeCut.h"
 #include "AliAnalysisTaskSE.h"
 
 class AliAnalysisTaskUpcNano_MB : public AliAnalysisTaskSE {
@@ -29,10 +31,14 @@ class AliAnalysisTaskUpcNano_MB : public AliAnalysisTaskSE {
   void SetIsESD(Bool_t ESD){isESD = ESD;}
   void SetCutEta(Float_t cut){cutEta = cut;}
   Double_t GetMedian(Double_t *daArray);
+  void SetCrossed(Int_t spd[4], TBits &crossed);
+  Int_t GetChipId(Int_t index, Int_t &chipId2, Bool_t debug=0);
+  Bool_t IsSTGFired(TBits bits, Int_t dphiMin=4, Int_t dphiMax=10, Bool_t tolerance = 1);
   void FillTree(TTree *t, TLorentzVector v);
  private:
  
   AliPIDResponse *fPIDResponse;
+  AliTimeRangeCut fTimeRangeCut;
   AliESDtrackCuts *fTrackCutsBit0;
   AliESDtrackCuts *fTrackCutsBit1;
   AliESDtrackCuts *fTrackCutsBit5;
@@ -65,20 +71,20 @@ class AliAnalysisTaskUpcNano_MB : public AliAnalysisTaskSE {
   
   Float_t fPt, fY, fM, fDiLeptonM, fDiLeptonPt, fZNAenergy, fZNCenergy, fZNAtime[4], fZNCtime[4], fPIDsigma;
   Int_t fChannel, fSign, fRunNumber;
-  Bool_t fTriggerInputsMC[11], fTriggers[8], fInEtaGen, fInEtaRec;
+  Bool_t fTriggerInputsMC[11], fTriggers[10], fInEtaGen, fInEtaRec;
   
   TFile *fSPDfile;
   TFile *fTOFfile;
   Int_t fLoadedRun;
-  TH2I *hBadMaxiPadMask;
-  TH1D *hBCmod4;
-  TH2D *hSPDeff;
+  TH2F *hTOFeff;
+  TH1D *hSPDeff;
   AliTOFTriggerMask *fTOFmask;
+  TBits fFOCrossFiredChips;
   
   AliAnalysisTaskUpcNano_MB(const AliAnalysisTaskUpcNano_MB&); //not implemented
   AliAnalysisTaskUpcNano_MB& operator =(const AliAnalysisTaskUpcNano_MB&); //not implemented
   
-  ClassDef(AliAnalysisTaskUpcNano_MB, 23); 
+  ClassDef(AliAnalysisTaskUpcNano_MB, 26); 
 };
 
 #endif

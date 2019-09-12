@@ -64,6 +64,7 @@ AliAnalysisTaskNewJetSubstructure::AliAnalysisTaskNewJetSubstructure() :
   fCentMax(10),
   fOneConstSelectOn(kFALSE),
   fTrackCheckPlots(kFALSE),
+  fDoFillMCLund(kFALSE),
   fCheckResolution(kFALSE),
   fSubjetCutoff(0.1),
   fMinPtConst(1),
@@ -77,6 +78,7 @@ AliAnalysisTaskNewJetSubstructure::AliAnalysisTaskNewJetSubstructure() :
   fDerivSubtrOrder(0),
   fPtJet(0x0),
   fHLundIterative(0x0),
+  fHLundIterativeMC(0x0),
   fHCheckResolutionSubjets(0x0),
   fTreeSubstructure(0)
 
@@ -103,6 +105,7 @@ AliAnalysisTaskNewJetSubstructure::AliAnalysisTaskNewJetSubstructure(const char 
   fCentMax(10),
   fOneConstSelectOn(kFALSE),
   fTrackCheckPlots(kFALSE),
+  fDoFillMCLund(kFALSE),
   fCheckResolution(kFALSE),
   fSubjetCutoff(0.1),
   fMinPtConst(1),
@@ -116,6 +119,7 @@ AliAnalysisTaskNewJetSubstructure::AliAnalysisTaskNewJetSubstructure(const char 
   fDerivSubtrOrder(0),
   fPtJet(0x0),
   fHLundIterative(0x0),
+  fHLundIterativeMC(0x0),
   fHCheckResolutionSubjets(0x0),  
   fTreeSubstructure(0)
   
@@ -159,6 +163,17 @@ AliAnalysisTaskNewJetSubstructure::~AliAnalysisTaskNewJetSubstructure()
   fOutput->Add(fHLundIterative);
 
 
+//log(1/theta),log(kt),jetpT,depth, tf, omega// 
+   const Int_t dimSpec2   = 7;
+   const Int_t nBinsSpec2[7]     = {50,100,100,20,100,50,100};
+   const Double_t lowBinSpec2[7] = {0.,-10,0,0,0,0,0};
+   const Double_t hiBinSpec2[7]  = {5.,10.,200,20,200,100,50};
+   fHLundIterativeMC = new THnSparseF("fHLundIterativeMC",
+                   "LundIterativePlotMC [log(1/theta),log(z*theta),pTjet,algo]",
+                   dimSpec2,nBinsSpec2,lowBinSpec2,hiBinSpec2);
+  fOutput->Add(fHLundIterativeMC);
+  
+
   //// 
    const Int_t dimResol   = 5;
    const Int_t nBinsResol[5]     = {10,10,80,80,80};
@@ -187,7 +202,7 @@ AliAnalysisTaskNewJetSubstructure::~AliAnalysisTaskNewJetSubstructure()
 
  
   TH1::AddDirectory(oldStatus);
-  const Int_t nVar = 10;
+  const Int_t nVar = 12;
   const char* nameoutput = GetOutputSlot(2)->GetContainer()->GetName();
   fTreeSubstructure = new TTree(nameoutput, nameoutput);
   TString *fShapesVarNames = new TString [nVar];
@@ -203,7 +218,8 @@ AliAnalysisTaskNewJetSubstructure::~AliAnalysisTaskNewJetSubstructure()
   fShapesVarNames[7] = "ngMatch";
   fShapesVarNames[8] = "zgMatch"; 
   fShapesVarNames[9] = "rgMatch";
- 
+  fShapesVarNames[10] = "LeadingTrackPt";
+  fShapesVarNames[11] = "LeadingTrackPtMatch";
 
 
    for(Int_t ivar=0; ivar < nVar; ivar++){
@@ -232,8 +248,7 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
   AliJetContainer *jetCont = GetJetContainer(0);
   //container zero is always the base containe: the data container, the embedded subtracted in the case of embedding or the detector level in case of pythia
  
-  if (fCentSelectOn)
-    if ((fCent>fCentMax) || (fCent<fCentMin)) return 0;
+  if (fCentSelectOn) if ((fCent>fCentMax) || (fCent<fCentMin)) return 0;
  
     Float_t rhoVal=0, rhoMassVal = 0.;
   if(jetCont) {
@@ -403,10 +418,12 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
 
   
       fShapesVar[0] = ptSubtracted;
+      fShapesVar[10] = jet1->MaxTrackPt();
       IterativeParents(jet1,jetCont);
      
       
       Float_t ptMatch=0.;
+      Float_t leadTrackMatch=0.;
       Double_t ktgMatch=0;;
       Double_t nsdMatch=0;
       Double_t zgMatch=0;
@@ -421,6 +438,7 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
          if(fJetShapeSub==kConstSub) kMatched = 3;
         
          ptMatch=jet3->Pt();
+	 leadTrackMatch=jet3->MaxTrackPt();
 	 IterativeParentsMCAverage(jet3,kMatched, aver1, aver2,aver3,aver4);
 	 ktgMatch=aver1;
 	 nsdMatch=aver2;
@@ -433,7 +451,7 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
         if(fJetShapeSub==kConstSub) kMatched = 3;
         if(fJetShapeSub==kDerivSub) kMatched = 2;
         ptMatch=jet3->Pt();
-
+        leadTrackMatch=jet3->MaxTrackPt();
         IterativeParentsMCAverage(jet3,kMatched, aver1, aver2,aver3,aver4);
 	 ktgMatch=aver1;
 	 nsdMatch=aver2;
@@ -447,6 +465,7 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
       if (fJetShapeType == kMCTrue || fJetShapeType == kData || fJetShapeType == kGenOnTheFly) {
        
         ptMatch=0.;
+	leadTrackMatch=0.;
         ktgMatch=0.;
         nsdMatch=0.;
 	zgMatch=0;
@@ -462,6 +481,7 @@ Bool_t AliAnalysisTaskNewJetSubstructure::FillHistograms()
       fShapesVar[7] = nsdMatch;
       fShapesVar[8] = zgMatch;
       fShapesVar[9]=rgMatch;
+      fShapesVar[11] =  leadTrackMatch;
       
       fTreeSubstructure->Fill();
       
@@ -769,32 +789,44 @@ void AliAnalysisTaskNewJetSubstructure::IterativeParentsMCAverage(AliEmcalJet *f
    fastjet::PseudoJet j1;
    fastjet::PseudoJet j2;
    jj=fOutputJets[0];
-  
+   int flagSubjet=0;
    double nall=0;
    double nsd=0;
-   double xkt=0;
-   double z=0;
+  
+  
    double zg=0;
    double xktg=0;
    double Rg=0;
-   double delta_R=0;
-    while(jj.has_parents(j1,j2) && z<fHardCutoff){
+  
+   double cumtf=0;
+    while(jj.has_parents(j1,j2)){
       nall=nall+1;
  
 
       if(j1.perp() < j2.perp()) swap(j1,j2);
-    
-          delta_R = j1.delta_R(j2);
-          xkt=j2.perp()*sin(delta_R);
-          z=j1.perp()/(j2.perp()+j1.perp());
+         double delta_R = j1.delta_R(j2);
+         double xkt=j2.perp()*sin(delta_R);
+         double lnpt_rel = log(xkt);
+	 double y = log(1./delta_R);
+	 double form=2*0.197*j2.e()/(xkt*xkt); 
+         double rad=j2.e();
+         double z=j2.perp()/(j2.perp()+j1.perp());
 	 if(z>fHardCutoff) nsd=nsd+1;
-         if(z>fHardCutoff){
+         if(z>fHardCutoff && flagSubjet==0){
 	   zg=z;
 	   xktg=xkt;
 	   Rg=delta_R;
-	   break;}
-     
-    jj=j1;} 
+	   flagSubjet=1;}
+	 if(lnpt_rel>0) cumtf=cumtf+form;   
+	 if(fDoFillMCLund==kTRUE){ 
+	 Double_t LundEntries[7] = {y,lnpt_rel,fOutputJets[0].perp(),nall,form,rad, cumtf};  
+         fHLundIterativeMC->Fill(LundEntries);}
+
+
+
+
+      
+    jj=j1;}
      
    average1=xktg;
    average2=nsd;
@@ -963,9 +995,11 @@ Bool_t AliAnalysisTaskNewJetSubstructure::CheckClosePartner(Int_t index, AliEmca
             mindps = dps;
         }
 	if(TMath::Abs(mindps)<fPhiCutValue && TMath::Abs(deta)<fEtaCutValue) return kTRUE;
-     } }
-	 return kFALSE;
-      }}
+     }}
+
+      }
+      return kFALSE;
+}
 
 
 

@@ -37,7 +37,6 @@
 #include "AliRDHFCutsDstoKKpi.h"
 #include "AliRDHFCutsDplustoKpipi.h"
 #include "AliRDHFCutsLctopKpi.h"
-#include "AliRDHFCutsBPlustoD0Pi.h"
 #include "AliRDHFCutsDStartoKpipi.h"
 #include "AliRDHFCutsLctoV0.h"
 #include "AliNormalizationCounter.h"
@@ -65,6 +64,7 @@ class AliAODEvent;
 class TClonesArray;
 class AliEmcalJet;
 class AliRhoParameter;
+class AliCDBEntry;
 
 class AliAnalysisTaskSEHFTreeCreator : public AliAnalysisTaskSE
 {
@@ -92,10 +92,17 @@ public:
     
     void SetRefMult(Double_t refMult) { fRefMult = refMult; }
     Double_t GetRefMult() { return fRefMult; }
+    void SetRefMultSHM(Double_t refMult) { fRefMultSHM = refMult; }
+    Double_t GetRefMultSHM() { return fRefMultSHM; }
     void SetMultiplVsZProfile(std::string period, TProfile *hprof)
     {
         delete fMultEstimatorAvg[period];
         fMultEstimatorAvg[period] = new TProfile(*hprof);
+    }
+    void SetMultiplVsZProfileSHM(std::string period, TProfile *hprof)
+    {
+        delete fMultEstimatorAvgSHM[period];
+        fMultEstimatorAvgSHM[period] = new TProfile(*hprof);
     }
     std::string GetPeriod(const AliVEvent *ev);
     void SetCorrNtrVtx(bool corr = true) { fCorrNtrVtx = corr; }
@@ -163,11 +170,12 @@ public:
     void Process3Prong(TClonesArray *array3Prong, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield);
     void ProcessDstar(TClonesArray *arrayDstar, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield);
     void ProcessCasc(TClonesArray *arrayCasc, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield);
+    void ProcessBplus(TClonesArray *array2prong, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield, AliAODMCHeader *mcHeader);
     void ProcessBs(TClonesArray *array3Prong, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield, AliAODMCHeader *mcHeader);
     void ProcessLb(TClonesArray *array3Prong, AliAODEvent *aod, TClonesArray *arrMC, Float_t bfield, AliAODMCHeader *mcHeader);
     void ProcessMCGen(TClonesArray *mcarray);
   
-    Bool_t CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau);
+    Bool_t CheckDaugAcc(TClonesArray* arrayMC,Int_t nProng, Int_t *labDau, Bool_t ITSUpgradeStudy);
     Bool_t IsCandidateFromHijing(AliAODRecoDecayHF *cand, AliAODMCHeader *mcHeader, TClonesArray* arrMC, AliAODTrack *tr = 0x0);
     
     void SelectGoodTrackForReconstruction(AliAODEvent *aod, Int_t trkEntries, Int_t &nSeleTrks,Bool_t *seleFlags);
@@ -177,7 +185,15 @@ public:
         fEnableNsigmaTPCDataCorr=true; 
         fSystemForNsigmaTPCDataCorr=syst; 
     }
-  
+
+    void ApplyPhysicsSelectionOnline(bool apply=true) { fApplyPhysicsSelOnline = apply; }
+
+    void EnableEventDownsampling(float fractokeep, unsigned long seed) {
+        fEnableEventDownsampling = true;
+        fFracToKeepEventDownsampling = fractokeep;
+        fSeedEventDownsampling = seed;
+    }
+
     // Particles (tracks or MC particles)
     //-----------------------------------------------------------------------------------------------
     void                        SetFillParticleTree(Bool_t b) {fFillParticleTree = b;}
@@ -213,7 +229,7 @@ private:
     AliRDHFCutsDstoKKpi     *fFiltCutsDstoKKpi;                    //      DstoKKpi filtering (or loose) cuts
     AliRDHFCutsDplustoKpipi *fFiltCutsDplustoKpipi;                //      DplustoKpipi filtering (or loose) cuts
     AliRDHFCutsLctopKpi     *fFiltCutsLctopKpi    ;                //      LctopKpi filtering (or loose) cuts
-    AliRDHFCutsBPlustoD0Pi  *fFiltCutsBplustoD0pi;                 //      BplustoD0pi filtering (or loose) cuts
+    AliRDHFCutsD0toKpi      *fFiltCutsBplustoD0pi;                 //      BplustoD0pi filtering (or loose) cuts
     AliRDHFCutsDstoKKpi     *fFiltCutsBstoDspi;                    //      BstoDspi filtering (or loose) cuts
     AliRDHFCutsDStartoKpipi *fFiltCutsDstartoKpipi;                //      DstartoKpipi filtering (or loose) cuts
     AliRDHFCutsLctoV0       *fFiltCutsLc2V0bachelor;               //      Lc2V0bachelor filtering (or loose) cuts
@@ -222,7 +238,7 @@ private:
     AliRDHFCutsDstoKKpi     *fCutsDstoKKpi;                        //      DstoKKpi analysis cuts
     AliRDHFCutsDplustoKpipi *fCutsDplustoKpipi;                    //      DplustoKpipi analysis cuts
     AliRDHFCutsLctopKpi     *fCutsLctopKpi;                        //      LctopKpi analysis cuts
-    AliRDHFCutsBPlustoD0Pi  *fCutsBplustoD0pi;                     //      BplustoD0pi analysis cuts
+    AliRDHFCutsD0toKpi      *fCutsBplustoD0pi;                     //      BplustoD0pi analysis cuts
     AliRDHFCutsDstoKKpi     *fCutsBstoDspi;                        //      BstoDspi analysis cuts
     AliRDHFCutsDStartoKpipi *fCutsDstartoKpipi;                    //      DstartoKpipi analysis cuts
     AliRDHFCutsLctoV0       *fCutsLc2V0bachelor;                   //      Lc2V0bachelor analysis cuts
@@ -319,17 +335,23 @@ private:
     Int_t                   fNtracks;                              /// number of tracks
     Int_t                   fIsEvRej;                              /// flag with information about rejection of the event
     Int_t                   fRunNumber;                            /// run number
+    Int_t                   fRunNumberCDB;                         /// run number (for OCDB)
     UInt_t                  fEventID;                              /// event ID (unique when combined with run number)
     TString                 fFileName;
     unsigned int            fDirNumber;
     Int_t                   fnTracklets;                           /// number of tracklets
     Int_t                   fnTrackletsCorr;                       /// number of tracklets (corrected)
+    Int_t                   fnTrackletsCorrSHM;                    /// number of tracklets (corrected)
     Double_t                fRefMult;                              /// reference multiplicity
-    Int_t                   fnV0A;                                 /// V0A multiplicity 
+    Double_t                fRefMultSHM;                           /// reference multiplicity
+    Int_t                   fnV0A;                                 /// V0A multiplicity
     Int_t                   fMultGen;                              /// generated multiplicity around mid-rapidity [-1,1]
     Int_t                   fMultGenV0A;                           /// generated multiplicity in V0A range
     Int_t                   fMultGenV0C;                           /// generated multiplicity in V0C range
     ULong64_t               fTriggerMask;                          /// Trigger mask bitmap
+    Bool_t                  fTriggerOnlineINT7;                       /// Flag explicitly whether bitmap contains INT7
+    Bool_t                  fTriggerOnlineHighMultSPD;                /// Flag explicitly whether bitmap contains HighMultSPD
+    Bool_t                  fTriggerOnlineHighMultV0;                 /// Flag explicitly whether bitmap kHighMultV0
     Bool_t                  fTriggerBitINT7;                       /// Flag explicitly whether bitmap contains INT7
     Bool_t                  fTriggerBitHighMultSPD;                /// Flag explicitly whether bitmap contains HighMultSPD
     Bool_t                  fTriggerBitHighMultV0;                 /// Flag explicitly whether bitmap kHighMultV0
@@ -341,6 +363,8 @@ private:
     Int_t                   fnV0MEq;                               /// V0M multiplicity (equalized)
     Int_t                   fnV0MCorr;                             /// V0M multiplicity (corrected)
     Int_t                   fnV0MEqCorr;                           /// V0M multiplicity (equalized + corrected)
+    Float_t                 fPercV0M;                              /// V0M multiplicity percentile
+    Float_t                 fMultV0M;                              /// V0M multiplicity from mult selection task
 
     Bool_t                  fFillMCGenTrees;                       /// flag to enable fill of the generated trees
   
@@ -420,11 +444,19 @@ private:
     int fSystemForNsigmaTPCDataCorr; /// system for data-driven NsigmaTPC correction
 
     std::map<std::string, TProfile*> fMultEstimatorAvg;
+    std::map<std::string, TProfile*> fMultEstimatorAvgSHM;
     bool fCorrNtrVtx;
     bool fCorrV0MVtx;
 
+    bool fApplyPhysicsSelOnline;                                   /// flag to apply physics selection in the task
+    bool fEnableEventDownsampling;                                 /// flag to apply event downsampling
+    float fFracToKeepEventDownsampling;                            /// fraction of events to be kept by event downsampling
+    unsigned long fSeedEventDownsampling;                          /// seed for event downsampling
+
+    AliCDBEntry *fCdbEntry;
+
     /// \cond CLASSIMP
-    ClassDef(AliAnalysisTaskSEHFTreeCreator,18);
+    ClassDef(AliAnalysisTaskSEHFTreeCreator,21);
     /// \endcond
 };
 
