@@ -52,6 +52,7 @@ AliAnalysisTaskSDKLResponse::AliAnalysisTaskSDKLResponse() :
   fhPtDeltaPtAreaBackSubSparse(0),
   fTreeDL(0),
   fTreeDLUEBS(0),
+  fTreePL(0),
   fJetsCont1(0),
   fJetsCont2(0),
   fTracksCont1(0),
@@ -87,6 +88,7 @@ AliAnalysisTaskSDKLResponse::AliAnalysisTaskSDKLResponse(const char *name, Int_t
   fhPtDeltaPtAreaBackSubSparse(0),
   fTreeDL(0),
   fTreeDLUEBS(0),
+  fTreePL(0),
   fJetsCont1(0),
   fJetsCont2(0),
   fTracksCont1(0),
@@ -98,6 +100,7 @@ AliAnalysisTaskSDKLResponse::AliAnalysisTaskSDKLResponse(const char *name, Int_t
   // SetMakeGeneralHistograms(kTRUE);
   DefineOutput(2, TTree::Class());
   DefineOutput(3, TTree::Class());
+  DefineOutput(4, TTree::Class());
 }
 
 //________________________________________________________________________
@@ -105,6 +108,7 @@ AliAnalysisTaskSDKLResponse::~AliAnalysisTaskSDKLResponse()
 {
   if (fTreeDL)      delete fTreeDL;
   if (fTreeDLUEBS)  delete fTreeDLUEBS;
+  if (fTreePL)      delete fTreePL;
   if (fRandom)      delete fRandom;
   // Destructor.
 }
@@ -235,10 +239,17 @@ AliAnalysisTaskSDKLResponse* AliAnalysisTaskSDKLResponse::AddTaskSoftDropRespons
                                                             TTree::Class(),AliAnalysisManager::kOutputContainer,
                                                             Form("%s", AliAnalysisManager::GetCommonFileName()));
 
+  TString contname4(name);
+  contname4 += "_treePL";
+  AliAnalysisDataContainer *coutput4 = mgr->CreateContainer(contname4.Data(),
+                                                            TTree::Class(),AliAnalysisManager::kOutputContainer,
+                                                            Form("%s", AliAnalysisManager::GetCommonFileName()));
+
   mgr->ConnectInput  (jetTask, 0,  cinput1 );
   mgr->ConnectOutput (jetTask, 1, coutput1 );
   mgr->ConnectOutput (jetTask, 2, coutput2 );
   mgr->ConnectOutput (jetTask, 3, coutput3 );
+  mgr->ConnectOutput (jetTask, 4, coutput4 );
 
   return jetTask;
 }
@@ -256,7 +267,7 @@ void AliAnalysisTaskSDKLResponse::UserCreateOutputObjects() {
   //                        0    1  2    3     4    5    6        7    8    9   10
   Int_t bins[nbins]    = { 10,  10, 2,  200,  20,  20,  20,     200,  20,  20,  20};
   Double_t xmin[nbins] = {0.0, 0.0, 0,  0.0, 0.0, 0.0, 0.0,      0., 0.0, 0.0, 0.0};
-  Double_t xmax[nbins] = {0.8, 1.0, 2, 200., 0.5, 0.4, 0.3,    200., 0.5, 0.4, 0.3};
+  Double_t xmax[nbins] = {0.8, 1.0, 2, 200., 0.5, 0.4, 0.2,    200., 0.5, 0.4, 0.2};
 
   fhResponse[0] = new THnSparseD("hResponse_1", "hResponse_1", nbins, bins, xmin, xmax); //by splits
   fhResponse[1] = new THnSparseD("hResponse_2", "hResponse_2", nbins, bins, xmin, xmax);
@@ -340,10 +351,10 @@ void AliAnalysisTaskSDKLResponse::UserCreateOutputObjects() {
 
   }
 
-  fhRho = new TH1F("fhRho","fhRho",1000,0,100);
+  fhRho = new TH1F("fhRho","fhRho",1000,0,1000);
   fOutput->Add(fhRho);
 
-  fhRhoSparse = new TH1F("fhRhoSparse","fhRhoSparse",1000,0,100);
+  fhRhoSparse = new TH1F("fhRhoSparse","fhRhoSparse",1000,0,1000);
   fOutput->Add(fhRhoSparse);
 
   fhPtDeltaPtAreaBackSub = new TH2F("fhPtDeltaPtAreaBackSub","fhPtDeltaPtAreaBackSub",20,0.,200.,200,-20.,20.);
@@ -357,6 +368,9 @@ void AliAnalysisTaskSDKLResponse::UserCreateOutputObjects() {
 
   fTreeDLUEBS = new TNtuple("JetTrackTreeDLUEBS", "jet-track tree dl+ue backgr sub", "pt:eta:phi:jetm");
   PostData(3, fTreeDLUEBS);
+
+  fTreePL = new TNtuple("JetTrackTreePL", "jet-track tree pl", "pt:eta:phi:jetm");
+  PostData(4, fTreePL);
 
   fRandom = new TRandom;
 
@@ -385,6 +399,12 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
 //    }
 //  }
 
+  //dump pl jets
+  if (isDumpEventToTree) {
+    FillTree(fJetsCont1, fTreePL);
+    PostData(4, fTreePL);
+  }
+
   std::vector<fastjet::PseudoJet> event_dl;
   AddTracksToEvent(fTracksCont2, event_dl); //only pythia det level tracks
   fastjet::ClusterSequence cs_dl(event_dl, jet_def);
@@ -404,6 +424,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
   FillMjetContainer(jets_dl_filtered, mjet_cont_dl);
 
   //PL-DL, no UE
+  std::vector<AliEmcalJet*> jets_pl_matched;
   std::vector<fastjet::PseudoJet> jets_dl_matched;
   for (int i = 0; i < mjet_cont_pl.size(); i++) {
     for (int j = 0; j < mjet_cont_dl.size(); j++) {
@@ -424,6 +445,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
       FillResponseFromMjets(mjet1, mjet2, fhResponseDet, dist, eshare, iscl);
       if ( (dist < 0.4) && (eshare > 0.5) && iscl ) { //strict cuts
         FillDeltasFromMjets(mjet1, mjet2, fhPtDeltaPtDet, fhPtDeltaZgDet, fhPtDeltaRgDet, fhPtDeltaMgDet);
+        if (mjet1.pointerAJet) jets_pl_matched.push_back(mjet1.pointerAJet);
         if (mjet2.pointerPJet) jets_dl_matched.push_back( *(mjet2.pointerPJet) );
       }
     }
@@ -431,6 +453,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
 
   //dump only matched jets
   if (isDumpEventToTree) {
+    FillRespTree(jets_pl_matched, fTreeDL);
     FillTree(jets_dl_matched, fTreeDL);
     PostData(2, fTreeDL);
   }
@@ -463,6 +486,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
   FillMjetContainer(jets_backsub_filtered, mjet_container_backsub);
 
   //background-subtracted jets
+  jets_pl_matched.clear();
   std::vector<fastjet::PseudoJet> jets_backsub_filtered_matched;
   for (int i = 0; i < mjet_cont_pl.size(); i++) {
     for (int j = 0; j < mjet_container_backsub.size(); j++) {
@@ -481,6 +505,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
       FillResponseFromMjets(mjet1, mjet2, fhResponseBackSub, dist, eshare, iscl);
       if ( (dist < 0.4) && (eshare > 0.5) && iscl ) { //strict cuts
         FillDeltasFromMjets(mjet1, mjet2, fhPtDeltaPtBackSub, fhPtDeltaZgBackSub, fhPtDeltaRgBackSub, fhPtDeltaMgBackSub);
+        if (mjet1.pointerAJet) jets_pl_matched.push_back(mjet1.pointerAJet);
         if (mjet2.pointerPJet) jets_backsub_filtered_matched.push_back( *(mjet2.pointerPJet) );
       }
     }
@@ -488,6 +513,7 @@ Bool_t AliAnalysisTaskSDKLResponse::FillHistograms() {
 
   //and now dump only matched jets
   if (isDumpEventToTree) {
+    FillRespTree(jets_pl_matched, fTreeDLUEBS);
     FillTree(jets_backsub_filtered_matched, fTreeDLUEBS);
     PostData(3, fTreeDLUEBS);
   }
@@ -760,5 +786,23 @@ Float_t AliAnalysisTaskSDKLResponse::CalcEnergyShare(mjet const & mjet1, mjet co
   }
 
   return pt_tot_from_jet1/mjet2.pt_scalar;
+
+}
+
+void AliAnalysisTaskSDKLResponse::FillRespTree(std::vector<AliEmcalJet*> const & jets, TNtuple* tree) {
+
+  for ( auto jet : jets ) {
+
+    if ( jet->Pt() < 30. ) continue;
+    UShort_t ntracks = jet->GetNumberOfTracks();
+    tree->Fill(jet->Pt(), jet->Eta(), jet->Phi(), ntracks);
+    for (int j = 0; j < ntracks; j++) {
+      auto jtrack = jet->Track(j);
+      if (jtrack->Pt() > 1.e-5) {
+        tree->Fill(jtrack->Pt(), jtrack->Eta(), jtrack->Phi(), -108);
+      }
+    }
+
+  }
 
 }

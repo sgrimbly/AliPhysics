@@ -1389,6 +1389,10 @@ void AliAnalysisTaskV0ChCorrelation::UserExec(Option_t *)
     if (!isINT7selected) return;
 
     AliAODEvent* fAOD = dynamic_cast<AliAODEvent*>(inEvMain->GetEvent());
+    if(!fAOD){
+      PostData(1, fOutput);
+      return;
+    }
     fPIDResponse = inEvMain->GetPIDResponse(); 
 
   //================================================================

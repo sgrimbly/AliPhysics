@@ -20,12 +20,17 @@ class AliAnalysisTaskNanoCheck : public AliAnalysisTaskSE {
     virtual void UserExec(Option_t* option);
     virtual void Terminate(Option_t* option);
 
-    // Setter for cut variables
+    // Setters
+    void DisableTrackCheck(Bool_t param = kFALSE){ checkTracks = param;  };
+    void DisableV0Check(Bool_t param = kFALSE){ checkV0s = param;  };
+    void DisableCascadeCheck(Bool_t param = kFALSE){ checkCascades = param;  };
 
     Bool_t GoodTracksSelection();
     Bool_t GoodV0Selection();
-    void FillTracks();
+    Bool_t GoodCascadeSelection();
+
     double GetTPCnSigma(AliVTrack* track, AliPID::EParticleType type);
+    void GetImpactParam(AliVTrack* track, Float_t p[2], Float_t cov[3]);
 
     // helper
     THnSparse* CreateTHnSparse(TString name,
@@ -58,6 +63,10 @@ class AliAnalysisTaskNanoCheck : public AliAnalysisTaskSE {
     THistManager* fHistos = nullptr;  //!
     AliAODVertex* vertex = nullptr;   //!
     Bool_t IsMC = kFALSE;
+    Bool_t IsNano = kFALSE;
+    Bool_t checkTracks = kTRUE;
+    Bool_t checkV0s = kTRUE;
+    Bool_t checkCascades = kTRUE;
     TClonesArray* fMCArray = nullptr;  //!
     TAxis binCent;                     //!
     TAxis binZ;                        //!
@@ -71,10 +80,10 @@ class AliAnalysisTaskNanoCheck : public AliAnalysisTaskSE {
 
     // Pion cuts
     UInt_t fFilterBit = 32.0;
-    Double_t fTPCNsigSigmaStarPionCut = 3.0;
-    Double_t fSigmaStarPionEtaCut = 0.8;
-    Double_t fSigmaStarPionZVertexCut = 2.0;  // 2.0
-    Double_t fSigmaStarPionXYVertexSigmaCut = 7.0;
+    Double_t fTPCNsigNanoCheckerPionCut = 3.0;
+    Double_t fNanoCheckerPionEtaCut = 0.8;
+    Double_t fNanoCheckerPionZVertexCut = 2.0;  // 2.0
+    Double_t fNanoCheckerPionXYVertexSigmaCut = 7.0;
 
     // Lambda cuts
     Double_t fTPCNsigLambdaProtonCut = 3.0;
@@ -88,16 +97,18 @@ class AliAnalysisTaskNanoCheck : public AliAnalysisTaskSE {
     Double_t fLambdaLifetime = 30.0;
     Double_t fV0MassWindowCut = 0.01;
 
-    // Sigma Star cut
-    Double_t fSigmaStarYCutHigh = 0.5;
-    Double_t fSigmaStarYCutLow = -0.5;
+    // Recon cut
+    Double_t fNanoCheckerYCutHigh = 0.5;
+    Double_t fNanoCheckerYCutLow = -0.5;
 
 
     std::vector<UInt_t> goodtrackindices;  //!
     std::vector<std::vector<UInt_t>> goodv0indices;  //!
 
-    ClassDef(AliAnalysisTaskNanoCheck, 2);
+    ClassDef(AliAnalysisTaskNanoCheck, 3);
     // Add rapidity/radius/Lifetime/Y cut of lambda
+    // Add GetImpactParam function
+    // Add setter for checking track/v0/cascade
 };
 
 #endif
